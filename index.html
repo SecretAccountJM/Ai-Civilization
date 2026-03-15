@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomous Society</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+    <style>
+        :root {
+            --bg: #11161b;
+            --panel: #1c252d;
+            --panel-alt: #24313b;
+            --line: #334550;
+            --text: #e7f0f4;
+            --muted: #93a4ad;
+            --accent: #8ad67d;
+            --warn: #f7c96a;
+            --danger: #ff7b72;
+            --wood: #9c6b3e;
+            --stone: #7f8c96;
+            --berry: #cf5d8f;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(93, 142, 102, 0.18), transparent 28%),
+                linear-gradient(135deg, #0f1419, #151d24 42%, #101820);
+            color: var(--text);
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            overflow: hidden;
+        }
+
+        #app {
+            display: grid;
+            grid-template-columns: minmax(760px, 1.65fr) minmax(360px, 0.9fr);
+            gap: 18px;
+            padding: 18px;
+            align-items: stretch;
+            height: 100vh;
+        }
+
+        .panel {
+            background: rgba(28, 37, 45, 0.94);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+            overflow: hidden;
+        }
+
+        #sim-panel {
+            display: grid;
+            grid-template-rows: auto auto auto minmax(0, 1fr);
+            min-height: 0;
+        }
+
+        .panel-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--line);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+        }
+
+        .panel-header h1,
+        .panel-header h2,
+        .panel-header p { margin: 0; }
+
+        .panel-header p {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        #game-container {
+            width: 100%;
+            min-height: 0;
+            height: 100%;
+            border-top: 1px solid rgba(255, 255, 255, 0.02);
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 10px 14px 14px;
+            background: linear-gradient(180deg, rgba(63, 93, 67, 0.12), rgba(23, 34, 28, 0.18));
+        }
+
+        #game-container canvas {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 10px;
+            border: 1px solid rgba(95, 133, 112, 0.18);
+            box-shadow: none;
+            image-rendering: pixelated;
+        }
+
+        #sidebar {
+            display: grid;
+            gap: 16px;
+            align-content: start;
+            min-height: 0;
+            overflow: auto;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 12px 14px 10px;
+        }
+
+        button {
+            appearance: none;
+            border: 1px solid var(--line);
+            background: var(--panel-alt);
+            color: var(--text);
+            border-radius: 999px;
+            padding: 8px 14px;
+            font: inherit;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.15s ease;
+        }
+
+        button:hover {
+            background: #30424f;
+            transform: translateY(-1px);
+        }
+
+        button.active {
+            background: #395767;
+            border-color: #4a6f82;
+        }
+
+        .stack {
+            display: grid;
+            gap: 12px;
+            padding: 14px 16px 16px;
+        }
+
+        .world-note {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 8px 14px 8px;
+            color: var(--muted);
+            font-size: 0.88rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.015);
+        }
+
+        .world-note strong {
+            display: block;
+            color: var(--text);
+            font-size: 0.98rem;
+            margin-bottom: 3px;
+        }
+
+        .world-note > div {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .stat-card {
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .stat-card strong,
+        .stat-card span {
+            display: block;
+        }
+
+        .stat-card strong {
+            font-size: 0.78rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .stat-card span {
+            margin-top: 6px;
+            font-size: 1rem;
+        }
+
+        .detail-list {
+            display: grid;
+            gap: 8px;
+            font-size: 0.94rem;
+        }
+
+        .detail-list div {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .detail-list strong {
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        #social-feed {
+            max-height: 360px;
+            overflow-y: auto;
+            display: grid;
+            gap: 10px;
+        }
+
+        .feed-item {
+            border-left: 4px solid var(--accent);
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+        }
+
+        .feed-item[data-tone="warning"] { border-left-color: var(--warn); }
+        .feed-item[data-tone="danger"] { border-left-color: var(--danger); }
+
+        .feed-item strong,
+        .feed-item span { display: block; }
+
+        .feed-item strong {
+            color: #b8e9ff;
+            margin-bottom: 4px;
+        }
+
+        .feed-item span {
+            color: var(--muted);
+            font-size: 0.8rem;
+            margin-top: 6px;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 0.84rem;
+        }
+
+        .legend div::before {
+            content: "";
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        .legend .wood::before { background: var(--wood); }
+        .legend .stone::before { background: var(--stone); }
+        .legend .berries::before { background: var(--berry); }
+        .legend .agent::before { background: #f3f6f8; }
+        .legend .farm::before { background: #4cb06b; }
+
+        @media (max-width: 1100px) {
+            body { overflow: auto; }
+            #app {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            #sidebar {
+                overflow: visible;
+            }
+            #game-container {
+                min-height: 560px;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <section class="panel" id="sim-panel">
+            <div class="panel-header">
+                <h1>Autonomous Society</h1>
+                <p>Browser-first village sim with modular AI, jobs, buildings, and debug controls.</p>
+            </div>
+            <div class="controls">
+                <button id="pause-btn">Pause</button>
+                <button class="speed-btn active" data-speed="1">x1</button>
+                <button class="speed-btn" data-speed="2">x2</button>
+                <button class="speed-btn" data-speed="4">x4</button>
+                <button id="spawn-agent-btn">Spawn Agent</button>
+                <button id="spawn-wood-btn">Spawn Wood</button>
+                <button id="spawn-berries-btn">Spawn Berries</button>
+                <button id="debug-btn" class="active">Hide Debug</button>
+            </div>
+            <div class="world-note">
+                <div>
+                    <strong>Living Sandbox</strong>
+                    Agents build, rest, gather, and take farm jobs without direct orders.
+                </div>
+                <div>
+                    <strong>Tip</strong>
+                    Click an agent to inspect it. Use `x2` or `x4` to watch the village settle faster.
+                </div>
+            </div>
+            <div id="game-container"></div>
+        </section>
+
+        <aside id="sidebar">
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Village Summary</h2>
+                    <p>Small deterministic map, fixed-step simulation.</p>
+                </div>
+                <div class="stack">
+                    <div class="legend">
+                        <div class="wood">Wood</div>
+                        <div class="stone">Stone</div>
+                        <div class="berries">Berries</div>
+                        <div class="agent">Agents</div>
+                        <div class="farm">Farm</div>
+                    </div>
+                    <div id="village-summary" class="stat-grid"></div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Selected Agent</h2>
+                    <p>Click an agent in the world to inspect current goals and needs.</p>
+                </div>
+                <div id="selected-agent" class="stack"></div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Event Log</h2>
+                    <p>Simulation events drive the feed. Flavor text is layered on top.</p>
+                </div>
+                <div class="stack">
+                    <div id="social-feed"></div>
+                </div>
+            </section>
+        </aside>
+    </div>
+
+    <script type="module" src="./game/main.js"></script>
+</body>
+</html>
