@@ -7,6 +7,7 @@ function card(label, value) {
 export class SimulationUI {
     constructor(world) {
         this.world = world;
+        this.scene = null; // set by scene after create()
         this.summaryElement = document.getElementById("village-summary");
         this.selectedElement = document.getElementById("selected-agent");
         this.feed = new SocialFeed(document.getElementById("social-feed"));
@@ -18,6 +19,18 @@ export class SimulationUI {
         this.spawnBerriesButton = document.getElementById("spawn-berries-btn");
         this.bindControls();
         this.render();
+    }
+
+    // Returns the world-space center of wherever the camera is looking
+    getCameraCenter() {
+        const cam = this.scene?.cameras?.main;
+        if (!cam) {
+            return { x: this.world.width / 2, y: this.world.height / 2 };
+        }
+        return {
+            x: cam.scrollX + cam.width  / (2 * cam.zoom),
+            y: cam.scrollY + cam.height / (2 * cam.zoom),
+        };
     }
 
     bindControls() {
@@ -47,11 +60,13 @@ export class SimulationUI {
         });
 
         this.spawnWoodButton.addEventListener("click", () => {
-            this.world.spawnResourceNear("wood", this.world.width * 0.5, this.world.height * 0.45);
+            const { x, y } = this.getCameraCenter();
+            this.world.spawnResourceNear("wood", x, y);
         });
 
         this.spawnBerriesButton.addEventListener("click", () => {
-            this.world.spawnResourceNear("berries", this.world.width * 0.55, this.world.height * 0.55);
+            const { x, y } = this.getCameraCenter();
+            this.world.spawnResourceNear("berries", x, y);
         });
     }
 

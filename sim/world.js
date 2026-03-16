@@ -35,10 +35,19 @@ export class WorldState {
 
     seed() {
         this.spawnResourceCluster();
+        // Spread starting agents across the map center area
+        const cx = this.width / 2;
+        const cy = this.height / 2;
+        const offsets = [
+            { x: -140, y: -80 },
+            { x:  60,  y: -80 },
+            { x: -140, y:  60 },
+            { x:  60,  y:  60 },
+        ];
         for (let index = 0; index < 4; index += 1) {
             this.spawnAgent({
-                x: 180 + index * 110,
-                y: 180 + (index % 2) * 84,
+                x: cx + offsets[index].x,
+                y: cy + offsets[index].y,
             });
         }
         this.selectedAgentId = this.agents[0]?.id ?? null;
@@ -76,18 +85,47 @@ export class WorldState {
     }
 
     spawnResourceCluster() {
-        const template = [
-            ["wood", 110, 110, 14],
-            ["wood", 760, 120, 14],
-            ["wood", 770, 610, 14],
-            ["stone", 130, 620, 14],
-            ["stone", 600, 390, 14],
-            ["berries", 350, 140, 8],
-            ["berries", 540, 610, 8],
-            ["berries", 300, 470, 8],
+        const W = this.width;
+        const H = this.height;
+        const m = 80; // margin from edge
+        // Wood clusters around outer ring — corners and mid-edges
+        const woodSpots = [
+            [m,         m        ],  // top-left
+            [W - m,     m        ],  // top-right
+            [W - m,     H - m    ],  // bottom-right
+            [m,         H - m    ],  // bottom-left
+            [W / 2,     m + 20   ],  // top-mid
+            [W / 2,     H - m - 20], // bottom-mid
         ];
-        for (const [type, x, y, amount] of template) {
-            this.createResource(type, x, y, amount);
+        for (const [x, y] of woodSpots) {
+            // Scatter 2-3 nodes per cluster
+            for (let k = 0; k < 3; k++) {
+                const ox = (k - 1) * 48;
+                const oy = k % 2 === 0 ? -32 : 32;
+                this.createResource("wood", x + ox, y + oy, 14);
+            }
+        }
+        // Stone scattered mid-map, away from dead center
+        const stoneSpots = [
+            [m + 80,    H / 2    ],
+            [W - m - 80, H / 2   ],
+            [W / 3,     H / 3    ],
+            [W * 2 / 3, H * 2 / 3],
+        ];
+        for (const [x, y] of stoneSpots) {
+            this.createResource("stone", x, y, 14);
+        }
+        // Berry bushes near map edges (not center)
+        const berrySpots = [
+            [m + 60,    H / 3    ],
+            [m + 60,    H * 2/3  ],
+            [W - m - 60, H / 3   ],
+            [W - m - 60, H * 2/3 ],
+            [W / 3,     H - m - 40],
+            [W * 2/3,   m + 40   ],
+        ];
+        for (const [x, y] of berrySpots) {
+            this.createResource("berries", x, y, 8);
         }
     }
 
@@ -219,6 +257,10 @@ export class WorldState {
             agent.bedId = building.id;
         } else if (building.type === "shelter") {
             agent.homeId = building.id;
+            // Plant a small wood grove and berry bush beside the new shelter
+            this.plantNear("wood",    building.x + 80,  building.y - 60, 10);
+            this.plantNear("wood",    building.x - 80,  building.y - 60, 10);
+            this.plantNear("berries", building.x,       building.y + 90, 6);
         } else if (building.type === "farm") {
             agent.farmId = building.id;
             this.jobs.push({
@@ -232,6 +274,23 @@ export class WorldState {
                 public: true,
             });
             addInventory(building.storage, "berries", 2);
+            // Plant extra berry bushes around the new farm
+            this.plantNear("berries", building.x + 60,  building.y, 8);
+            this.plantNear("berries", building.x - 60,  building.y, 8);
+        }
+    }
+
+    plantNear(type, x, y, amount) {
+        // Keep within world bounds with a margin
+        const m = 32;
+        const px = Math.max(m, Math.min(this.width  - m, x));
+        const py = Math.max(m, Math.min(this.height - m, y));
+        // Only plant if no existing resource of the same type is very close
+        const tooClose = this.resources.some(
+            (r) => r.type === type && Math.abs(r.x - px) < 40 && Math.abs(r.y - py) < 40
+        );
+        if (!tooClose) {
+            this.createResource(type, px, py, amount);
         }
     }
 
@@ -274,22 +333,32 @@ export class WorldState {
     }
 
     findBuildSpot(agent, footprint) {
-        const index = this.agents.findIndex((entry) => entry.id === agent.id);
-        const baseX = 140 + (index % 4) * 170;
-        const baseY = 320 + Math.floor(index / 4) * 170;
+        // Build near the agent's current position instead of fixed grid
+        const bx = Math.round(agent.x / this.gridSize) * this.gridSize;
+        const by = Math.round(agent.y / this.gridSize) * this.gridSize;
+        const step = this.gridSize * 3; // ~96px spacing
+        const m = 80;
         const candidates = [
-            { x: baseX, y: baseY },
-            { x: baseX + 72, y: baseY },
-            { x: baseX, y: baseY + 72 },
-            { x: baseX + 72, y: baseY + 72 },
-        ];
+            { x: bx,        y: by + step },
+            { x: bx - step, y: by        },
+            { x: bx + step, y: by        },
+            { x: bx,        y: by - step },
+            { x: bx - step, y: by + step },
+            { x: bx + step, y: by + step },
+            { x: bx - step, y: by - step },
+            { x: bx + step, y: by - step },
+        ].map((p) => ({
+            x: Math.max(m, Math.min(this.width  - m, p.x)),
+            y: Math.max(m, Math.min(this.height - m, p.y)),
+        }));
         return candidates.find((point) => this.isAreaFree(point.x, point.y, footprint)) ?? null;
     }
 
     isAreaFree(x, y, footprint) {
+        const minGap = 120; // minimum pixel gap between buildings
         return !this.buildings.some((building) =>
-            Math.abs(building.x - x) < (building.footprint.w + footprint.w) * this.gridSize * 0.45 &&
-            Math.abs(building.y - y) < (building.footprint.h + footprint.h) * this.gridSize * 0.45
+            Math.abs(building.x - x) < (building.footprint.w + footprint.w) * this.gridSize * 0.5 + minGap &&
+            Math.abs(building.y - y) < (building.footprint.h + footprint.h) * this.gridSize * 0.5 + minGap
         );
     }
 
