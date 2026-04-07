@@ -7,37 +7,42 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
     <style>
         :root {
-            --bg: #0e1518;
-            --bg-alt: #172127;
-            --panel: rgba(17, 27, 33, 0.92);
-            --panel-soft: rgba(33, 48, 57, 0.72);
-            --line: rgba(143, 176, 170, 0.16);
-            --text: #edf5ef;
-            --muted: #9eb2aa;
+            --bg: #0b1215;
+            --bg-soft: #101b1f;
+            --panel: rgba(14, 23, 28, 0.94);
+            --panel-soft: rgba(27, 42, 49, 0.88);
+            --line: rgba(146, 181, 171, 0.16);
+            --line-strong: rgba(146, 181, 171, 0.24);
+            --text: #eef5ee;
+            --muted: #98aea5;
             --accent: #86d288;
-            --accent-strong: #b8f089;
-            --warn: #f2be69;
-            --danger: #ef7c6a;
-            --chip: #23353b;
-            --shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+            --accent-soft: rgba(134, 210, 136, 0.12);
+            --accent-strong: #d4f78d;
+            --warn: #f0c170;
+            --danger: #eb7e69;
+            --chip: #22363e;
+            --shadow: 0 24px 60px rgba(0, 0, 0, 0.32);
         }
 
         * { box-sizing: border-box; }
 
-        body {
+        html, body {
             margin: 0;
-            min-height: 100vh;
+            min-height: 100%;
+        }
+
+        body {
             background:
-                radial-gradient(circle at top left, rgba(95, 152, 104, 0.18), transparent 24%),
-                radial-gradient(circle at bottom right, rgba(63, 122, 83, 0.18), transparent 28%),
-                linear-gradient(135deg, #0d1417 0%, #142026 45%, #0f171b 100%);
+                radial-gradient(circle at top left, rgba(95, 152, 104, 0.16), transparent 24%),
+                radial-gradient(circle at top right, rgba(104, 137, 162, 0.1), transparent 24%),
+                linear-gradient(135deg, #0a1013 0%, #10181c 48%, #0d1417 100%);
             color: var(--text);
             font-family: "Segoe UI", "Trebuchet MS", sans-serif;
         }
 
         #app {
             display: grid;
-            grid-template-columns: minmax(760px, 1.7fr) minmax(360px, 0.95fr);
+            grid-template-columns: minmax(0, 1.7fr) minmax(340px, 0.9fr);
             gap: 18px;
             min-height: 100vh;
             padding: 18px;
@@ -46,99 +51,118 @@
         .panel {
             background: var(--panel);
             border: 1px solid var(--line);
-            border-radius: 18px;
+            border-radius: 22px;
             box-shadow: var(--shadow);
             overflow: hidden;
+            min-width: 0;
         }
 
         #sim-panel {
-            display: grid;
-            grid-template-rows: auto auto auto minmax(0, 1fr);
-            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 36px);
         }
 
-        .panel-header {
-            padding: 18px 20px 14px;
+        .topbar {
+            padding: 18px 20px 16px;
             border-bottom: 1px solid var(--line);
-            background: linear-gradient(180deg, rgba(255,255,255,0.035), transparent);
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent);
         }
 
         .eyebrow {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 6px 10px;
+            padding: 7px 12px;
             border-radius: 999px;
-            background: rgba(134, 210, 136, 0.12);
+            background: var(--accent-soft);
             color: var(--accent-strong);
-            font-size: 0.76rem;
-            text-transform: uppercase;
+            font-size: 0.74rem;
             letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
-        .panel-header h1,
+        .topbar h1,
         .panel-header h2,
-        .panel-header h3,
         .panel-header p {
             margin: 0;
         }
 
-        .panel-header h1,
-        .panel-header h2 {
-            margin-top: 10px;
-            font-size: clamp(1.25rem, 2vw, 2rem);
-            line-height: 1.05;
+        .topbar h1 {
+            margin-top: 12px;
+            font-size: clamp(1.9rem, 3vw, 3rem);
+            line-height: 1;
         }
 
-        .panel-header p {
-            margin-top: 8px;
+        .topbar p {
+            margin: 10px 0 0;
+            max-width: 64ch;
             color: var(--muted);
-            max-width: 72ch;
+            font-size: 1rem;
+            line-height: 1.5;
         }
 
-        .hero-strip {
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 14px;
-            padding: 16px 18px;
-            border-bottom: 1px solid var(--line);
-            background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-        }
-
-        .hero-card,
-        .hero-note {
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            background: var(--panel-soft);
-            padding: 14px 16px;
-        }
-
-        .hero-card strong,
-        .hero-note strong {
-            display: block;
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--muted);
-            margin-bottom: 8px;
-        }
-
-        .hero-card span {
-            display: block;
-            font-size: 1.3rem;
-            line-height: 1.25;
-        }
-
-        .controls,
-        .sandbox-tools {
+        .loop-strip {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
-            padding: 14px 18px 0;
+            margin-top: 14px;
         }
 
-        .sandbox-tools {
-            padding-bottom: 14px;
+        .loop-step,
+        .watch-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.03);
+            font-size: 0.9rem;
+        }
+
+        .watch-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .watch-chip strong {
+            display: block;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .watch-chip span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.82rem;
+            line-height: 1.35;
+        }
+
+        .control-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(255,255,255,0.015);
+        }
+
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .control-label {
+            margin-right: 2px;
+            align-self: center;
+            color: var(--muted);
+            font-size: 0.78rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
         }
 
         button {
@@ -150,42 +174,71 @@
             padding: 9px 14px;
             font: inherit;
             cursor: pointer;
-            transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+            transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
         }
 
         button:hover {
             transform: translateY(-1px);
-            background: #30444b;
-            border-color: rgba(184, 240, 137, 0.26);
+            background: #2b434c;
+            border-color: rgba(212, 247, 141, 0.32);
         }
 
         button.active {
-            background: #35544c;
-            border-color: rgba(184, 240, 137, 0.42);
+            background: #37564f;
+            border-color: rgba(212, 247, 141, 0.42);
             color: var(--accent-strong);
         }
 
-        .tool-banner {
-            display: flex;
-            justify-content: space-between;
-            gap: 14px;
-            padding: 0 18px 14px;
-            color: var(--muted);
-            font-size: 0.92rem;
+        .stage-shell {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            gap: 12px;
+            padding: 16px 18px 18px;
+            min-height: 0;
+            flex: 1;
         }
 
-        .tool-banner strong {
-            color: var(--text);
+        .stage-meta {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: start;
+        }
+
+        .stage-objective,
+        .stage-rule {
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            background: var(--panel-soft);
+        }
+
+        .stage-objective strong,
+        .stage-rule strong {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .stage-objective p,
+        .stage-rule p {
+            margin: 0;
+            line-height: 1.45;
         }
 
         #game-container {
-            min-height: 0;
-            margin: 0 18px 18px;
-            border: 1px solid var(--line);
-            border-radius: 18px;
+            min-height: 560px;
+            height: 100%;
+            border: 1px solid var(--line-strong);
+            border-radius: 22px;
             overflow: hidden;
             position: relative;
-            background: linear-gradient(180deg, rgba(63, 93, 67, 0.12), rgba(23, 34, 28, 0.18));
+            background:
+                linear-gradient(180deg, rgba(75, 101, 64, 0.12), rgba(20, 30, 24, 0.24)),
+                linear-gradient(135deg, #17221d, #111a16);
         }
 
         #game-container canvas {
@@ -199,13 +252,66 @@
             display: grid;
             gap: 16px;
             align-content: start;
-            min-height: 0;
+            min-width: 0;
+        }
+
+        .panel-header {
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .panel-header h2 {
+            font-size: 1.1rem;
+            line-height: 1.1;
+        }
+
+        .panel-header p {
+            margin-top: 8px;
+            color: var(--muted);
+            line-height: 1.45;
         }
 
         .stack {
             display: grid;
             gap: 12px;
             padding: 14px 16px 16px;
+        }
+
+        .summary-band {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .summary-card {
+            padding: 12px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.02);
+        }
+
+        .summary-card strong,
+        .summary-card span,
+        .summary-card small {
+            display: block;
+        }
+
+        .summary-card strong {
+            color: var(--muted);
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .summary-card span {
+            margin-top: 6px;
+            font-size: 1.18rem;
+        }
+
+        .summary-card small {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 0.8rem;
         }
 
         .stat-grid {
@@ -222,11 +328,11 @@
         }
 
         .stat-card.warn {
-            border-color: rgba(242, 190, 105, 0.3);
+            border-color: rgba(240, 193, 112, 0.34);
         }
 
         .stat-card.soft {
-            border-color: rgba(158, 178, 170, 0.22);
+            border-color: rgba(146, 181, 171, 0.26);
         }
 
         .stat-card strong,
@@ -243,17 +349,17 @@
 
         .stat-card span {
             margin-top: 6px;
-            font-size: 1.04rem;
+            font-size: 1rem;
         }
 
         .detail-list {
             display: grid;
-            gap: 8px;
+            gap: 10px;
             font-size: 0.94rem;
         }
 
         .detail-list.compact {
-            font-size: 0.88rem;
+            font-size: 0.9rem;
         }
 
         .detail-list div {
@@ -277,7 +383,7 @@
 
         .inspector-header h3 {
             margin: 0;
-            font-size: 1.05rem;
+            font-size: 1.02rem;
         }
 
         .badge {
@@ -285,9 +391,9 @@
             align-items: center;
             padding: 5px 9px;
             border-radius: 999px;
-            background: rgba(184, 240, 137, 0.1);
+            background: rgba(212, 247, 141, 0.1);
             color: var(--accent-strong);
-            font-size: 0.76rem;
+            font-size: 0.74rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
         }
@@ -308,7 +414,7 @@
             border-left: 4px solid var(--accent);
             padding: 10px 12px;
             background: rgba(255, 255, 255, 0.03);
-            border-radius: 10px;
+            border-radius: 12px;
         }
 
         .feed-item[data-tone="warning"] { border-left-color: var(--warn); }
@@ -328,38 +434,57 @@
             margin-top: 6px;
         }
 
-        @media (max-width: 1180px) {
-            body { overflow: auto; }
+        @media (max-width: 1240px) {
             #app {
                 grid-template-columns: 1fr;
-                min-height: 0;
             }
-            #sidebar {
-                overflow: visible;
-            }
-            #game-container {
-                min-height: 560px;
+
+            #sim-panel {
+                min-height: auto;
             }
         }
 
-        @media (max-width: 720px) {
+        @media (max-width: 860px) {
             #app {
                 padding: 10px;
                 gap: 12px;
             }
-            .hero-strip {
+
+            .watch-row,
+            .stage-meta {
                 grid-template-columns: 1fr;
             }
+
+            .summary-band,
             .stat-grid {
                 grid-template-columns: 1fr 1fr;
             }
-            .tool-banner,
+
             .detail-list div {
                 flex-direction: column;
                 align-items: flex-start;
             }
+        }
+
+        @media (max-width: 640px) {
+            .summary-band,
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .control-bar,
+            .control-group,
+            .loop-strip {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
             button {
-                flex: 1 1 auto;
+                width: 100%;
+            }
+
+            #game-container {
+                min-height: 420px;
             }
         }
     </style>
@@ -367,56 +492,88 @@
 <body>
     <div id="app">
         <section class="panel" id="sim-panel">
-            <div class="panel-header">
+            <div class="topbar">
                 <div class="eyebrow">HTML5 Civilization Sandbox</div>
                 <h1>Autonomous Society</h1>
-                <p>This is now framed as a small civilization sandbox: settlers self-organize, but the player shapes the map, population pressure, and resource economy through direct world tools.</p>
-            </div>
+                <p>A browser civilization sandbox focused on a readable core loop: gather, build, expand, react, and specialize. AI should make the settlement feel alive through behavior and adaptation, not just text.</p>
 
-            <div class="hero-strip">
-                <div class="hero-card">
-                    <strong>Current Focus</strong>
-                    <span>Grow a stable settlement, inspect what each settler is doing, and intervene with controlled sandbox tools instead of raw debug actions.</span>
+                <div class="loop-strip">
+                    <div class="loop-step">Gather</div>
+                    <div class="loop-step">Build</div>
+                    <div class="loop-step">Expand</div>
+                    <div class="loop-step">React</div>
+                    <div class="loop-step">Specialize</div>
                 </div>
-                <div class="hero-note">
-                    <strong>Interaction Model</strong>
-                    Tap the world to inspect or place. Drag to pan. Scroll to zoom. Use the tool palette to switch between observation and intervention.
+
+                <div class="watch-row">
+                    <div class="watch-chip">
+                        <div>
+                            <strong>Readable Systems</strong>
+                            <span>Keep the simulation shallow but believable across economy, settlement growth, and survival pressure.</span>
+                        </div>
+                    </div>
+                    <div class="watch-chip">
+                        <div>
+                            <strong>AI For Behavior</strong>
+                            <span>Settlers should reveal goals, memory, and adaptation through actions you can watch on the map.</span>
+                        </div>
+                    </div>
+                    <div class="watch-chip">
+                        <div>
+                            <strong>Watchability</strong>
+                            <span>The world should remain understandable through summaries, event logs, and visible state changes.</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="controls">
-                <button id="pause-btn">Pause</button>
-                <button class="speed-btn active" data-speed="1">x1</button>
-                <button class="speed-btn" data-speed="2">x2</button>
-                <button class="speed-btn" data-speed="4">x4</button>
-                <button id="spawn-agent-btn">Spawn At Camera</button>
-                <button id="spawn-wood-btn">Wood At Camera</button>
-                <button id="spawn-berries-btn">Berries At Camera</button>
-                <button id="debug-btn" class="active">Hide Debug</button>
+            <div class="control-bar">
+                <div class="control-group">
+                    <span class="control-label">Simulation</span>
+                    <button id="pause-btn">Pause</button>
+                    <button class="speed-btn active" data-speed="1">x1</button>
+                    <button class="speed-btn" data-speed="2">x2</button>
+                    <button class="speed-btn" data-speed="4">x4</button>
+                    <button id="debug-btn" class="active">Hide Debug</button>
+                </div>
+
+                <div class="control-group">
+                    <span class="control-label">Sandbox</span>
+                    <button class="tool-btn active" data-tool="inspect">Inspect</button>
+                    <button class="tool-btn" data-tool="settler">Place Settler</button>
+                    <button class="tool-btn" data-tool="wood">Plant Wood</button>
+                    <button class="tool-btn" data-tool="berries">Plant Berries</button>
+                    <button id="spawn-agent-btn">Spawn At Camera</button>
+                    <button id="spawn-wood-btn">Wood At Camera</button>
+                    <button id="spawn-berries-btn">Berries At Camera</button>
+                </div>
             </div>
 
-            <div class="sandbox-tools">
-                <button class="tool-btn active" data-tool="inspect">Inspect</button>
-                <button class="tool-btn" data-tool="settler">Place Settler</button>
-                <button class="tool-btn" data-tool="wood">Plant Wood</button>
-                <button class="tool-btn" data-tool="berries">Plant Berries</button>
-            </div>
+            <div class="stage-shell">
+                <div class="stage-meta">
+                    <div class="stage-objective">
+                        <strong>Current Objective</strong>
+                        <p>Grow a stable settlement with enough food, beds, and work so the simulation produces visible stories instead of random noise.</p>
+                    </div>
+                    <div class="stage-rule">
+                        <strong>Active Tool</strong>
+                        <p><span id="active-tool-label">Inspect</span></p>
+                        <p id="sandbox-rule-copy">Placement respects world bounds and avoids obvious overlap with buildings and duplicate resource clusters.</p>
+                    </div>
+                </div>
 
-            <div class="tool-banner">
-                <div><strong>Active Tool</strong> <span id="active-tool-label">Inspect</span></div>
-                <div><strong>Sandbox Rule</strong> Placement respects world bounds and avoids obvious overlaps with buildings and duplicate resource clusters.</div>
+                <div id="game-container"></div>
             </div>
-
-            <div id="game-container"></div>
         </section>
 
         <aside id="sidebar">
             <section class="panel">
                 <div class="panel-header">
                     <h2>Village Summary</h2>
-                    <p>Deterministic simulation metrics, resource pressure, and settlement footprint.</p>
+                    <p>Progress should be obvious. These metrics show whether the settlement is stable, growing, and reacting well to pressure.</p>
                 </div>
                 <div class="stack">
+                    <div id="summary-band" class="summary-band"></div>
                     <div id="village-summary" class="stat-grid"></div>
                 </div>
             </section>
@@ -424,7 +581,7 @@
             <section class="panel">
                 <div class="panel-header">
                     <h2>World Status</h2>
-                    <p>What the sandbox is currently doing and how to control it.</p>
+                    <p>Use this to understand what the sandbox is doing now, why it matters, and how to intervene without guessing.</p>
                 </div>
                 <div id="world-status" class="stack"></div>
             </section>
@@ -432,7 +589,7 @@
             <section class="panel">
                 <div class="panel-header">
                     <h2>Inspector</h2>
-                    <p>Settlers, buildings, and resource nodes share one inspection surface.</p>
+                    <p>Watchability depends on seeing intent. Inspect settlers, buildings, and resource nodes from one consistent panel.</p>
                 </div>
                 <div id="selected-entity" class="stack"></div>
             </section>
@@ -440,7 +597,7 @@
             <section class="panel">
                 <div class="panel-header">
                     <h2>Event Log</h2>
-                    <p>Simulation events and sandbox actions flow into the same village timeline.</p>
+                    <p>Emergent stories should come from system interaction: hunger, building progress, jobs, expansion, and sandbox intervention.</p>
                 </div>
                 <div class="stack">
                     <div id="social-feed"></div>

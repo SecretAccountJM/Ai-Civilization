@@ -12,10 +12,12 @@ export class SimulationUI {
     constructor(world) {
         this.world = world;
         this.scene = null;
+        this.summaryBandElement = document.getElementById("summary-band");
         this.summaryElement = document.getElementById("village-summary");
         this.selectedElement = document.getElementById("selected-entity");
         this.worldStatusElement = document.getElementById("world-status");
         this.activeToolElement = document.getElementById("active-tool-label");
+        this.sandboxRuleCopyElement = document.getElementById("sandbox-rule-copy");
         this.feed = new SocialFeed(document.getElementById("social-feed"));
         this.pauseButton = document.getElementById("pause-btn");
         this.debugButton = document.getElementById("debug-btn");
@@ -101,6 +103,13 @@ export class SimulationUI {
             berries: "Plant Berries",
         };
         this.activeToolElement.textContent = labels[this.world.activeTool] ?? "Inspect";
+        const rules = {
+            inspect: "Inspect settlers, buildings, and resources to understand goals, bottlenecks, and settlement pressure.",
+            settler: "New settlers snap to the nearest open point so the sandbox does not spawn them inside buildings.",
+            wood: "Wood placement stays inside world bounds and avoids stacking identical nodes on top of each other.",
+            berries: "Berry placement follows the same safe-spacing rule so food sources remain readable and useful.",
+        };
+        this.sandboxRuleCopyElement.textContent = rules[this.world.activeTool] ?? rules.inspect;
     }
 
     renderSelected(selected) {
@@ -166,6 +175,11 @@ export class SimulationUI {
 
     render() {
         const snapshot = this.world.getVillageSnapshot();
+        this.summaryBandElement.innerHTML = [
+            `<div class="summary-card"><strong>Settlement Phase</strong><span>${snapshot.buildings.shelter > 0 ? "Established" : "Founding"}</span><small>${snapshot.population} settlers shaping the map</small></div>`,
+            `<div class="summary-card"><strong>Main Pressure</strong><span>${snapshot.metrics.unmetNeeds > 0 ? "Survival Needs" : "Expansion"}</span><small>${snapshot.metrics.unmetNeeds > 0 ? `${snapshot.metrics.unmetNeeds} settlers need help` : "The village can afford to build out"}</small></div>`,
+        ].join("");
+
         this.summaryElement.innerHTML = [
             card("Day", `${snapshot.day} • ${snapshot.timeLabel}`),
             card("Population", snapshot.population),
@@ -185,7 +199,9 @@ export class SimulationUI {
             <div class="detail-list compact">
                 ${detailRow("Simulation", this.world.paused ? "Paused" : `Running at x${this.world.speed}`)}
                 ${detailRow("Sandbox Tool", this.activeToolElement.textContent || "Inspect")}
+                ${detailRow("Core Loop", "Gather -> Build -> Expand -> React -> Specialize")}
                 ${detailRow("Interaction", "Tap to inspect or place. Drag to pan. Scroll to zoom.")}
+                ${detailRow("Design Goal", "Make settlement pressure and AI behavior visible without constant clicking.")}
             </div>
         `;
 
