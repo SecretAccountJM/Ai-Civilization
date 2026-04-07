@@ -6,6 +6,8 @@ const EVENT_STYLES = {
     agent_paid: "accent",
     agent_ate: "warning",
     agent_rested: "warning",
+    sandbox_placed: "accent",
+    sandbox_blocked: "danger",
 };
 
 const EVENT_TEXT = {
@@ -20,6 +22,8 @@ const EVENT_TEXT = {
     agent_exhausted: (event) => `${event.agentName} is about to collapse from exhaustion.`,
     agent_reserved_job: (event) => `${event.agentName} reserved a public farm job.`,
     agent_gathered: (event) => `${event.agentName} gathered ${event.resourceType}.`,
+    sandbox_placed: (event) => event.message,
+    sandbox_blocked: (event) => event.message,
 };
 
 export class SocialFeed {

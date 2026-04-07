@@ -30,19 +30,20 @@ export class WorldState {
             averageStability: 100,
         };
         this.selectedAgentId = null;
+        this.selectedEntity = null;
+        this.activeTool = "inspect";
         this.randomIndex = 0;
     }
 
     seed() {
         this.spawnResourceCluster();
-        // Spread starting agents across the map center area
         const cx = this.width / 2;
         const cy = this.height / 2;
         const offsets = [
             { x: -140, y: -80 },
-            { x:  60,  y: -80 },
-            { x: -140, y:  60 },
-            { x:  60,  y:  60 },
+            { x: 60, y: -80 },
+            { x: -140, y: 60 },
+            { x: 60, y: 60 },
         ];
         for (let index = 0; index < 4; index += 1) {
             this.spawnAgent({
@@ -50,7 +51,9 @@ export class WorldState {
                 y: cy + offsets[index].y,
             });
         }
-        this.selectedAgentId = this.agents[0]?.id ?? null;
+        if (this.agents[0]) {
+            this.selectAgent(this.agents[0].id);
+        }
     }
 
     step(dt) {
@@ -87,42 +90,38 @@ export class WorldState {
     spawnResourceCluster() {
         const W = this.width;
         const H = this.height;
-        const m = 80; // margin from edge
-        // Wood clusters around outer ring — corners and mid-edges
+        const m = 80;
         const woodSpots = [
-            [m,         m        ],  // top-left
-            [W - m,     m        ],  // top-right
-            [W - m,     H - m    ],  // bottom-right
-            [m,         H - m    ],  // bottom-left
-            [W / 2,     m + 20   ],  // top-mid
-            [W / 2,     H - m - 20], // bottom-mid
+            [m, m],
+            [W - m, m],
+            [W - m, H - m],
+            [m, H - m],
+            [W / 2, m + 20],
+            [W / 2, H - m - 20],
         ];
         for (const [x, y] of woodSpots) {
-            // Scatter 2-3 nodes per cluster
             for (let k = 0; k < 3; k++) {
                 const ox = (k - 1) * 48;
                 const oy = k % 2 === 0 ? -32 : 32;
                 this.createResource("wood", x + ox, y + oy, 14);
             }
         }
-        // Stone scattered mid-map, away from dead center
         const stoneSpots = [
-            [m + 80,    H / 2    ],
-            [W - m - 80, H / 2   ],
-            [W / 3,     H / 3    ],
+            [m + 80, H / 2],
+            [W - m - 80, H / 2],
+            [W / 3, H / 3],
             [W * 2 / 3, H * 2 / 3],
         ];
         for (const [x, y] of stoneSpots) {
             this.createResource("stone", x, y, 14);
         }
-        // Berry bushes near map edges (not center)
         const berrySpots = [
-            [m + 60,    H / 3    ],
-            [m + 60,    H * 2/3  ],
-            [W - m - 60, H / 3   ],
-            [W - m - 60, H * 2/3 ],
-            [W / 3,     H - m - 40],
-            [W * 2/3,   m + 40   ],
+            [m + 60, H / 3],
+            [m + 60, H * 2 / 3],
+            [W - m - 60, H / 3],
+            [W - m - 60, H * 2 / 3],
+            [W / 3, H - m - 40],
+            [W * 2 / 3, m + 40],
         ];
         for (const [x, y] of berrySpots) {
             this.createResource("berries", x, y, 8);
@@ -144,6 +143,21 @@ export class WorldState {
         return id;
     }
 
+    createResourceAt(type, x, y, amount = type === "berries" ? 6 : 10) {
+        const point = this.getClampedPoint(x, y, 36);
+        if (!this.canPlaceResource(point.x, point.y, type)) {
+            this.emit("sandbox_blocked", {
+                message: `Cannot place ${type} here. Keep space around buildings and matching resources.`,
+            });
+            return null;
+        }
+        const id = this.createResource(type, point.x, point.y, amount);
+        this.emit("sandbox_placed", {
+            message: `${type[0].toUpperCase()}${type.slice(1)} placed in the sandbox.`,
+        });
+        return this.getResource(id);
+    }
+
     spawnAgent(position = {}) {
         const id = `agent-${this.nextId++}`;
         const name = NAMES[(this.agents.length + this.randomIndex) % NAMES.length];
@@ -156,6 +170,17 @@ export class WorldState {
             traits: this.rollTraits(),
         });
         this.agents.push(agent);
+        return agent;
+    }
+
+    spawnAgentAt(x, y) {
+        const point = this.findNearestOpenPoint(x, y);
+        const agent = this.spawnAgent(point);
+        this.selectAgent(agent.id);
+        this.emit("sandbox_placed", {
+            agentName: agent.name,
+            message: `${agent.name} joined the settlement.`,
+        });
         return agent;
     }
 
@@ -257,10 +282,9 @@ export class WorldState {
             agent.bedId = building.id;
         } else if (building.type === "shelter") {
             agent.homeId = building.id;
-            // Plant a small wood grove and berry bush beside the new shelter
-            this.plantNear("wood",    building.x + 80,  building.y - 60, 10);
-            this.plantNear("wood",    building.x - 80,  building.y - 60, 10);
-            this.plantNear("berries", building.x,       building.y + 90, 6);
+            this.plantNear("wood", building.x + 80, building.y - 60, 10);
+            this.plantNear("wood", building.x - 80, building.y - 60, 10);
+            this.plantNear("berries", building.x, building.y + 90, 6);
         } else if (building.type === "farm") {
             agent.farmId = building.id;
             this.jobs.push({
@@ -274,18 +298,13 @@ export class WorldState {
                 public: true,
             });
             addInventory(building.storage, "berries", 2);
-            // Plant extra berry bushes around the new farm
-            this.plantNear("berries", building.x + 60,  building.y, 8);
-            this.plantNear("berries", building.x - 60,  building.y, 8);
+            this.plantNear("berries", building.x + 60, building.y, 8);
+            this.plantNear("berries", building.x - 60, building.y, 8);
         }
     }
 
     plantNear(type, x, y, amount) {
-        // Keep within world bounds with a margin
-        const m = 32;
-        const px = Math.max(m, Math.min(this.width  - m, x));
-        const py = Math.max(m, Math.min(this.height - m, y));
-        // Only plant if no existing resource of the same type is very close
+        const { x: px, y: py } = this.getClampedPoint(x, y, 32);
         const tooClose = this.resources.some(
             (r) => r.type === type && Math.abs(r.x - px) < 40 && Math.abs(r.y - py) < 40
         );
@@ -333,29 +352,28 @@ export class WorldState {
     }
 
     findBuildSpot(agent, footprint) {
-        // Build near the agent's current position instead of fixed grid
         const bx = Math.round(agent.x / this.gridSize) * this.gridSize;
         const by = Math.round(agent.y / this.gridSize) * this.gridSize;
-        const step = this.gridSize * 3; // ~96px spacing
+        const step = this.gridSize * 3;
         const m = 80;
         const candidates = [
-            { x: bx,        y: by + step },
-            { x: bx - step, y: by        },
-            { x: bx + step, y: by        },
-            { x: bx,        y: by - step },
+            { x: bx, y: by + step },
+            { x: bx - step, y: by },
+            { x: bx + step, y: by },
+            { x: bx, y: by - step },
             { x: bx - step, y: by + step },
             { x: bx + step, y: by + step },
             { x: bx - step, y: by - step },
             { x: bx + step, y: by - step },
         ].map((p) => ({
-            x: Math.max(m, Math.min(this.width  - m, p.x)),
+            x: Math.max(m, Math.min(this.width - m, p.x)),
             y: Math.max(m, Math.min(this.height - m, p.y)),
         }));
         return candidates.find((point) => this.isAreaFree(point.x, point.y, footprint)) ?? null;
     }
 
     isAreaFree(x, y, footprint) {
-        const minGap = 120; // minimum pixel gap between buildings
+        const minGap = 120;
         return !this.buildings.some((building) =>
             Math.abs(building.x - x) < (building.footprint.w + footprint.w) * this.gridSize * 0.5 + minGap &&
             Math.abs(building.y - y) < (building.footprint.h + footprint.h) * this.gridSize * 0.5 + minGap
@@ -366,9 +384,10 @@ export class WorldState {
         const angle = (this.time * 0.7 + this.randomIndex) % (Math.PI * 2);
         const radius = 30 + (this.randomIndex % 3) * 16;
         this.randomIndex += 1;
+        const point = this.getClampedPoint(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, 28);
         return {
-            x: clamp(x + Math.cos(angle) * radius, 28, this.width - 28),
-            y: clamp(y + Math.sin(angle) * radius, 28, this.height - 28),
+            x: point.x,
+            y: point.y,
         };
     }
 
@@ -381,12 +400,70 @@ export class WorldState {
         return this.agents.find((agent) => distance(agent, { x, y }) < 16) ?? null;
     }
 
+    getBuildingAt(x, y) {
+        return this.buildings.find((building) => {
+            const width = building.footprint.w * 34;
+            const height = building.footprint.h * 34;
+            return Math.abs(building.x - x) <= width / 2 && Math.abs(building.y - y) <= height / 2;
+        }) ?? null;
+    }
+
+    getResourceAt(x, y) {
+        return this.resources.find((resource) => distance(resource, { x, y }) < 20) ?? null;
+    }
+
+    getInspectableAt(x, y) {
+        const agent = this.getAgentAt(x, y);
+        if (agent) {
+            return { type: "agent", entity: agent };
+        }
+        const building = this.getBuildingAt(x, y);
+        if (building) {
+            return { type: "building", entity: building };
+        }
+        const resource = this.getResourceAt(x, y);
+        if (resource) {
+            return { type: "resource", entity: resource };
+        }
+        return null;
+    }
+
     selectAgent(agentId) {
         this.selectedAgentId = agentId;
+        this.selectedEntity = agentId ? { type: "agent", id: agentId } : null;
+    }
+
+    selectEntity(type, id) {
+        if (!type || !id) {
+            this.selectedAgentId = null;
+            this.selectedEntity = null;
+            return;
+        }
+        this.selectedEntity = { type, id };
+        this.selectedAgentId = type === "agent" ? id : null;
     }
 
     getSelectedAgent() {
         return this.getAgent(this.selectedAgentId);
+    }
+
+    getSelectedEntity() {
+        if (!this.selectedEntity) {
+            return null;
+        }
+        if (this.selectedEntity.type === "agent") {
+            const agent = this.getAgent(this.selectedEntity.id);
+            return agent ? { type: "agent", entity: agent } : null;
+        }
+        if (this.selectedEntity.type === "building") {
+            const building = this.getBuilding(this.selectedEntity.id);
+            return building ? { type: "building", entity: building } : null;
+        }
+        if (this.selectedEntity.type === "resource") {
+            const resource = this.getResource(this.selectedEntity.id);
+            return resource ? { type: "resource", entity: resource } : null;
+        }
+        return null;
     }
 
     drainEvents() {
@@ -411,17 +488,109 @@ export class WorldState {
         return `${hours}:${minutes}`;
     }
 
-    getDebugSnapshot() {
+    setActiveTool(tool) {
+        this.activeTool = tool;
+    }
+
+    getClampedPoint(x, y, margin = 32) {
+        return {
+            x: clamp(x, margin, this.width - margin),
+            y: clamp(y, margin, this.height - margin),
+        };
+    }
+
+    canPlaceResource(x, y, type) {
+        const nearBuilding = this.buildings.some((building) => distance(building, { x, y }) < 72);
+        const nearSimilar = this.resources.some((resource) => resource.type === type && distance(resource, { x, y }) < 36);
+        return !nearBuilding && !nearSimilar;
+    }
+
+    findNearestOpenPoint(x, y) {
+        const origin = this.getClampedPoint(x, y, 44);
+        const offsets = [
+            [0, 0],
+            [48, 0],
+            [-48, 0],
+            [0, 48],
+            [0, -48],
+            [48, 48],
+            [48, -48],
+            [-48, 48],
+            [-48, -48],
+        ];
+
+        for (const [dx, dy] of offsets) {
+            const point = this.getClampedPoint(origin.x + dx, origin.y + dy, 44);
+            const occupied = this.agents.some((agent) => distance(agent, point) < 28) ||
+                this.buildings.some((building) => distance(building, point) < 72);
+            if (!occupied) {
+                return point;
+            }
+        }
+
+        return origin;
+    }
+
+    getVillageSnapshot() {
+        const resourceTotals = {
+            wood: Math.round(this.countAvailableResource("wood")),
+            stone: Math.round(this.countAvailableResource("stone")),
+            berries: Math.round(this.countAvailableResource("berries")),
+        };
+        const buildings = {
+            bed: this.buildings.filter((building) => building.type === "bed" && building.constructed).length,
+            shelter: this.buildings.filter((building) => building.type === "shelter" && building.constructed).length,
+            farm: this.buildings.filter((building) => building.type === "farm" && building.constructed).length,
+        };
         return {
             day: this.day,
             timeLabel: this.getTimeLabel(),
-            agentCount: this.agents.length,
-            buildings: {
-                bed: this.buildings.filter((building) => building.type === "bed" && building.constructed).length,
-                shelter: this.buildings.filter((building) => building.type === "shelter" && building.constructed).length,
-                farm: this.buildings.filter((building) => building.type === "farm" && building.constructed).length,
-            },
+            population: this.agents.length,
+            resources: resourceTotals,
+            buildings,
             metrics: { ...this.metrics },
+            activeTool: this.activeTool,
+            selected: this.describeSelectedEntity(),
+        };
+    }
+
+    describeSelectedEntity() {
+        const selected = this.getSelectedEntity();
+        if (!selected) {
+            return null;
+        }
+        if (selected.type === "agent") {
+            return { type: "agent", ...selected.entity.snapshot(this) };
+        }
+        if (selected.type === "building") {
+            const building = selected.entity;
+            const owner = this.getAgent(building.ownerId);
+            return {
+                type: "building",
+                id: building.id,
+                label: BUILDING_BLUEPRINTS[building.type].label,
+                owner: owner?.name ?? "Public",
+                status: building.constructed ? "Constructed" : "Under construction",
+                progress: Math.round((building.progress / BUILDING_BLUEPRINTS[building.type].buildTime) * 100),
+                storage: { ...(building.storage ?? {}) },
+            };
+        }
+        const resource = selected.entity;
+        return {
+            type: "resource",
+            id: resource.id,
+            label: resource.type[0].toUpperCase() + resource.type.slice(1),
+            amount: Math.round(resource.amount),
+            maxAmount: resource.maxAmount,
+            reservedBy: resource.reservedBy ? this.getAgent(resource.reservedBy)?.name ?? "Reserved" : "No one",
+        };
+    }
+
+    getDebugSnapshot() {
+        const snapshot = this.getVillageSnapshot();
+        return {
+            ...snapshot,
+            agentCount: snapshot.population,
             selectedAgent: this.getSelectedAgent()?.snapshot(this) ?? null,
         };
     }

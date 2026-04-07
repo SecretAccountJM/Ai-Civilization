@@ -7,77 +7,182 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
     <style>
         :root {
-            --bg: #11161b;
-            --panel: #1c252d;
-            --panel-alt: #24313b;
-            --line: #334550;
-            --text: #e7f0f4;
-            --muted: #93a4ad;
-            --accent: #8ad67d;
-            --warn: #f7c96a;
-            --danger: #ff7b72;
-            --wood: #9c6b3e;
-            --stone: #7f8c96;
-            --berry: #cf5d8f;
+            --bg: #0e1518;
+            --bg-alt: #172127;
+            --panel: rgba(17, 27, 33, 0.92);
+            --panel-soft: rgba(33, 48, 57, 0.72);
+            --line: rgba(143, 176, 170, 0.16);
+            --text: #edf5ef;
+            --muted: #9eb2aa;
+            --accent: #86d288;
+            --accent-strong: #b8f089;
+            --warn: #f2be69;
+            --danger: #ef7c6a;
+            --chip: #23353b;
+            --shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
         }
 
         * { box-sizing: border-box; }
 
         body {
             margin: 0;
-            height: 100vh;
+            min-height: 100vh;
             background:
-                radial-gradient(circle at top left, rgba(93, 142, 102, 0.18), transparent 28%),
-                linear-gradient(135deg, #0f1419, #151d24 42%, #101820);
+                radial-gradient(circle at top left, rgba(95, 152, 104, 0.18), transparent 24%),
+                radial-gradient(circle at bottom right, rgba(63, 122, 83, 0.18), transparent 28%),
+                linear-gradient(135deg, #0d1417 0%, #142026 45%, #0f171b 100%);
             color: var(--text);
-            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-            overflow: hidden;
+            font-family: "Segoe UI", "Trebuchet MS", sans-serif;
         }
 
         #app {
             display: grid;
-            grid-template-columns: minmax(760px, 1.65fr) minmax(360px, 0.9fr);
+            grid-template-columns: minmax(760px, 1.7fr) minmax(360px, 0.95fr);
             gap: 18px;
+            min-height: 100vh;
             padding: 18px;
-            align-items: stretch;
-            height: 100vh;
         }
 
         .panel {
-            background: rgba(28, 37, 45, 0.94);
+            background: var(--panel);
             border: 1px solid var(--line);
-            border-radius: 14px;
-            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
             overflow: hidden;
         }
 
         #sim-panel {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-rows: auto auto auto minmax(0, 1fr);
             min-height: 0;
         }
 
         .panel-header {
-            padding: 14px 16px;
+            padding: 18px 20px 14px;
             border-bottom: 1px solid var(--line);
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+            background: linear-gradient(180deg, rgba(255,255,255,0.035), transparent);
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(134, 210, 136, 0.12);
+            color: var(--accent-strong);
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
 
         .panel-header h1,
         .panel-header h2,
-        .panel-header p { margin: 0; }
+        .panel-header h3,
+        .panel-header p {
+            margin: 0;
+        }
+
+        .panel-header h1,
+        .panel-header h2 {
+            margin-top: 10px;
+            font-size: clamp(1.25rem, 2vw, 2rem);
+            line-height: 1.05;
+        }
 
         .panel-header p {
-            margin-top: 4px;
+            margin-top: 8px;
+            color: var(--muted);
+            max-width: 72ch;
+        }
+
+        .hero-strip {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 14px;
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--line);
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+        }
+
+        .hero-card,
+        .hero-note {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: var(--panel-soft);
+            padding: 14px 16px;
+        }
+
+        .hero-card strong,
+        .hero-note strong {
+            display: block;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .hero-card span {
+            display: block;
+            font-size: 1.3rem;
+            line-height: 1.25;
+        }
+
+        .controls,
+        .sandbox-tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 14px 18px 0;
+        }
+
+        .sandbox-tools {
+            padding-bottom: 14px;
+        }
+
+        button {
+            appearance: none;
+            border: 1px solid var(--line);
+            background: var(--chip);
+            color: var(--text);
+            border-radius: 999px;
+            padding: 9px 14px;
+            font: inherit;
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            background: #30444b;
+            border-color: rgba(184, 240, 137, 0.26);
+        }
+
+        button.active {
+            background: #35544c;
+            border-color: rgba(184, 240, 137, 0.42);
+            color: var(--accent-strong);
+        }
+
+        .tool-banner {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 0 18px 14px;
             color: var(--muted);
             font-size: 0.92rem;
         }
 
+        .tool-banner strong {
+            color: var(--text);
+        }
+
         #game-container {
-            width: 100%;
             min-height: 0;
-            flex: 1;
-            border-top: 1px solid rgba(255, 255, 255, 0.02);
+            margin: 0 18px 18px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
             overflow: hidden;
             position: relative;
             background: linear-gradient(180deg, rgba(63, 93, 67, 0.12), rgba(23, 34, 28, 0.18));
@@ -95,65 +200,12 @@
             gap: 16px;
             align-content: start;
             min-height: 0;
-            overflow: auto;
-        }
-
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding: 12px 14px 10px;
-        }
-
-        button {
-            appearance: none;
-            border: 1px solid var(--line);
-            background: var(--panel-alt);
-            color: var(--text);
-            border-radius: 999px;
-            padding: 8px 14px;
-            font: inherit;
-            cursor: pointer;
-            transition: background 0.15s ease, transform 0.15s ease;
-        }
-
-        button:hover {
-            background: #30424f;
-            transform: translateY(-1px);
-        }
-
-        button.active {
-            background: #395767;
-            border-color: #4a6f82;
         }
 
         .stack {
             display: grid;
             gap: 12px;
             padding: 14px 16px 16px;
-        }
-
-        .world-note {
-            display: flex;
-            justify-content: space-between;
-            gap: 14px;
-            padding: 8px 14px 8px;
-            color: var(--muted);
-            font-size: 0.88rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.02);
-            background: rgba(255, 255, 255, 0.015);
-        }
-
-        .world-note strong {
-            display: block;
-            color: var(--text);
-            font-size: 0.98rem;
-            margin-bottom: 3px;
-        }
-
-        .world-note > div {
-            flex: 1;
-            min-width: 0;
         }
 
         .stat-grid {
@@ -163,10 +215,18 @@
         }
 
         .stat-card {
-            padding: 10px 12px;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.02);
             border: 1px solid var(--line);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .stat-card.warn {
+            border-color: rgba(242, 190, 105, 0.3);
+        }
+
+        .stat-card.soft {
+            border-color: rgba(158, 178, 170, 0.22);
         }
 
         .stat-card strong,
@@ -175,21 +235,25 @@
         }
 
         .stat-card strong {
-            font-size: 0.78rem;
             color: var(--muted);
+            font-size: 0.76rem;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
         }
 
         .stat-card span {
             margin-top: 6px;
-            font-size: 1rem;
+            font-size: 1.04rem;
         }
 
         .detail-list {
             display: grid;
             gap: 8px;
             font-size: 0.94rem;
+        }
+
+        .detail-list.compact {
+            font-size: 0.88rem;
         }
 
         .detail-list div {
@@ -201,6 +265,36 @@
         .detail-list strong {
             color: var(--muted);
             font-weight: 600;
+        }
+
+        .inspector-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .inspector-header h3 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: rgba(184, 240, 137, 0.1);
+            color: var(--accent-strong);
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .empty-copy {
+            margin: 0;
+            color: var(--muted);
         }
 
         #social-feed {
@@ -224,7 +318,7 @@
         .feed-item span { display: block; }
 
         .feed-item strong {
-            color: #b8e9ff;
+            color: #c8f3ff;
             margin-bottom: 4px;
         }
 
@@ -234,42 +328,38 @@
             margin-top: 6px;
         }
 
-        .legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            color: var(--muted);
-            font-size: 0.84rem;
-        }
-
-        .legend div::before {
-            content: "";
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 6px;
-            vertical-align: middle;
-        }
-
-        .legend .wood::before { background: var(--wood); }
-        .legend .stone::before { background: var(--stone); }
-        .legend .berries::before { background: var(--berry); }
-        .legend .agent::before { background: #f3f6f8; }
-        .legend .farm::before { background: #4cb06b; }
-
-        @media (max-width: 1100px) {
+        @media (max-width: 1180px) {
             body { overflow: auto; }
             #app {
                 grid-template-columns: 1fr;
-                height: auto;
+                min-height: 0;
             }
             #sidebar {
                 overflow: visible;
             }
             #game-container {
                 min-height: 560px;
-                height: auto;
+            }
+        }
+
+        @media (max-width: 720px) {
+            #app {
+                padding: 10px;
+                gap: 12px;
+            }
+            .hero-strip {
+                grid-template-columns: 1fr;
+            }
+            .stat-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .tool-banner,
+            .detail-list div {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            button {
+                flex: 1 1 auto;
             }
         }
     </style>
@@ -278,29 +368,45 @@
     <div id="app">
         <section class="panel" id="sim-panel">
             <div class="panel-header">
+                <div class="eyebrow">HTML5 Civilization Sandbox</div>
                 <h1>Autonomous Society</h1>
-                <p>Browser-first village sim with modular AI, jobs, buildings, and debug controls.</p>
+                <p>This is now framed as a small civilization sandbox: settlers self-organize, but the player shapes the map, population pressure, and resource economy through direct world tools.</p>
             </div>
+
+            <div class="hero-strip">
+                <div class="hero-card">
+                    <strong>Current Focus</strong>
+                    <span>Grow a stable settlement, inspect what each settler is doing, and intervene with controlled sandbox tools instead of raw debug actions.</span>
+                </div>
+                <div class="hero-note">
+                    <strong>Interaction Model</strong>
+                    Tap the world to inspect or place. Drag to pan. Scroll to zoom. Use the tool palette to switch between observation and intervention.
+                </div>
+            </div>
+
             <div class="controls">
                 <button id="pause-btn">Pause</button>
                 <button class="speed-btn active" data-speed="1">x1</button>
                 <button class="speed-btn" data-speed="2">x2</button>
                 <button class="speed-btn" data-speed="4">x4</button>
-                <button id="spawn-agent-btn">Spawn Agent</button>
-                <button id="spawn-wood-btn">Spawn Wood</button>
-                <button id="spawn-berries-btn">Spawn Berries</button>
+                <button id="spawn-agent-btn">Spawn At Camera</button>
+                <button id="spawn-wood-btn">Wood At Camera</button>
+                <button id="spawn-berries-btn">Berries At Camera</button>
                 <button id="debug-btn" class="active">Hide Debug</button>
             </div>
-            <div class="world-note">
-                <div>
-                    <strong>Living Sandbox</strong>
-                    Agents build, rest, gather, and take farm jobs without direct orders.
-                </div>
-                <div>
-                    <strong>Tip</strong>
-                    Click an agent to inspect it. Use `x2` or `x4` to watch the village settle faster.
-                </div>
+
+            <div class="sandbox-tools">
+                <button class="tool-btn active" data-tool="inspect">Inspect</button>
+                <button class="tool-btn" data-tool="settler">Place Settler</button>
+                <button class="tool-btn" data-tool="wood">Plant Wood</button>
+                <button class="tool-btn" data-tool="berries">Plant Berries</button>
             </div>
+
+            <div class="tool-banner">
+                <div><strong>Active Tool</strong> <span id="active-tool-label">Inspect</span></div>
+                <div><strong>Sandbox Rule</strong> Placement respects world bounds and avoids obvious overlaps with buildings and duplicate resource clusters.</div>
+            </div>
+
             <div id="game-container"></div>
         </section>
 
@@ -308,32 +414,33 @@
             <section class="panel">
                 <div class="panel-header">
                     <h2>Village Summary</h2>
-                    <p>Small deterministic map, fixed-step simulation.</p>
+                    <p>Deterministic simulation metrics, resource pressure, and settlement footprint.</p>
                 </div>
                 <div class="stack">
-                    <div class="legend">
-                        <div class="wood">Wood</div>
-                        <div class="stone">Stone</div>
-                        <div class="berries">Berries</div>
-                        <div class="agent">Agents</div>
-                        <div class="farm">Farm</div>
-                    </div>
                     <div id="village-summary" class="stat-grid"></div>
                 </div>
             </section>
 
             <section class="panel">
                 <div class="panel-header">
-                    <h2>Selected Agent</h2>
-                    <p>Click an agent in the world to inspect current goals and needs.</p>
+                    <h2>World Status</h2>
+                    <p>What the sandbox is currently doing and how to control it.</p>
                 </div>
-                <div id="selected-agent" class="stack"></div>
+                <div id="world-status" class="stack"></div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Inspector</h2>
+                    <p>Settlers, buildings, and resource nodes share one inspection surface.</p>
+                </div>
+                <div id="selected-entity" class="stack"></div>
             </section>
 
             <section class="panel">
                 <div class="panel-header">
                     <h2>Event Log</h2>
-                    <p>Simulation events drive the feed. Flavor text is layered on top.</p>
+                    <p>Simulation events and sandbox actions flow into the same village timeline.</p>
                 </div>
                 <div class="stack">
                     <div id="social-feed"></div>

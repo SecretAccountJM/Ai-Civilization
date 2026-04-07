@@ -1,5 +1,3 @@
-import { BUILDING_COLORS, RESOURCE_COLORS } from "../sim/blueprints.js";
-
 let runtime = null;
 
 export function setRuntime(nextRuntime) {
@@ -15,13 +13,15 @@ export class SocietyScene extends Phaser.Scene {
         this.resourceViews = new Map();
         this.buildingViews = new Map();
         this.debugLabels = [];
-        this.selectionRing = null;
+        this.selectionMarker = null;
+        this.hoverMarker = null;
+        this.dragState = null;
     }
 
     preload() {
         this.load.image("grass-bg", "asset/grass_bg.jpg");
-        this.load.image("house-1", "asset/house_1.avif");
-        this.load.image("house-2", "asset/house_2.avif");
+        this.load.image("house-1", "asset/house_1.png");
+        this.load.image("house-2", "asset/house_2.png");
     }
 
     create() {
@@ -37,65 +37,64 @@ export class SocietyScene extends Phaser.Scene {
         this.add.circle(runtime.world.width - 150, runtime.world.height - 140, 130, 0x315336, 0.08);
 
         this.drawGrid();
-        this.selectionRing = this.add.circle(0, 0, 20).setStrokeStyle(3, 0xfff1a6).setVisible(false);
+        this.selectionMarker = this.add.graphics().setDepth(30);
+        this.hoverMarker = this.add.graphics().setDepth(29);
 
-        // ── Camera setup ──────────────────────────────────────────
         this.cameras.main.setBounds(0, 0, runtime.world.width, runtime.world.height);
         this.cameras.main.setZoom(1);
-        // Start centered on the world
         this.cameras.main.centerOn(midX, midY);
 
-        // ── Drag-to-pan ───────────────────────────────────────────
-        this._dragOrigin = null;
-        this._camStartX  = 0;
-        this._camStartY  = 0;
-        this._isDragging = false;
+        this.dragState = {
+            origin: null,
+            cameraX: 0,
+            cameraY: 0,
+            dragging: false,
+        };
+
+        this.input.mouse?.disableContextMenu();
 
         this.input.on("pointerdown", (pointer) => {
-            this._isDragging = false;
-            this._dragOrigin = { x: pointer.x, y: pointer.y };
-            this._camStartX  = this.cameras.main.scrollX;
-            this._camStartY  = this.cameras.main.scrollY;
+            this.dragState.origin = { x: pointer.x, y: pointer.y };
+            this.dragState.cameraX = this.cameras.main.scrollX;
+            this.dragState.cameraY = this.cameras.main.scrollY;
+            this.dragState.dragging = false;
         });
 
         this.input.on("pointermove", (pointer) => {
-            if (!pointer.isDown || !this._dragOrigin) return;
-            const dx = pointer.x - this._dragOrigin.x;
-            const dy = pointer.y - this._dragOrigin.y;
-            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-                this._isDragging = true;
+            this.updateHoverMarker(pointer);
+            if (!pointer.isDown || !this.dragState.origin) {
+                return;
             }
-            if (this._isDragging) {
+            const dx = pointer.x - this.dragState.origin.x;
+            const dy = pointer.y - this.dragState.origin.y;
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                this.dragState.dragging = true;
+            }
+            if (this.dragState.dragging) {
                 const zoom = this.cameras.main.zoom;
                 this.cameras.main.setScroll(
-                    this._camStartX - dx / zoom,
-                    this._camStartY - dy / zoom
+                    this.dragState.cameraX - dx / zoom,
+                    this.dragState.cameraY - dy / zoom
                 );
             }
         });
 
         this.input.on("pointerup", (pointer) => {
-            if (!this._isDragging) {
-                // It was a click — handle agent selection
-                const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-                const agent = runtime.world.getAgentAt(worldPoint.x, worldPoint.y);
-                if (agent) {
-                    runtime.world.selectAgent(agent.id);
-                    runtime.ui.render();
-                }
+            if (!this.dragState.dragging) {
+                this.handleWorldTap(pointer);
             }
-            this._isDragging = false;
-            this._dragOrigin = null;
+            this.dragState.origin = null;
+            this.dragState.dragging = false;
         });
 
-        // ── Scroll-to-zoom ────────────────────────────────────────
-        this.input.on("wheel", (_pointer, _gameObjects, _dx, dy) => {
-            const cam   = this.cameras.main;
-            const delta = dy > 0 ? -0.1 : 0.1;
-            cam.setZoom(Phaser.Math.Clamp(cam.zoom + delta, 0.35, 2.5));
+        this.input.on("wheel", (pointer, _gameObjects, _dx, dy) => {
+            const cam = this.cameras.main;
+            const worldPoint = cam.getWorldPoint(pointer.x, pointer.y);
+            const zoom = Phaser.Math.Clamp(cam.zoom + (dy > 0 ? -0.1 : 0.1), 0.35, 2.5);
+            cam.zoomTo(zoom, 80);
+            cam.centerOn(worldPoint.x, worldPoint.y);
         });
 
-        // Let the HUD know which scene to read camera from
         runtime.ui.scene = this;
     }
 
@@ -111,6 +110,45 @@ export class SocietyScene extends Phaser.Scene {
             graphics.lineTo(runtime.world.width, y);
         }
         graphics.strokePath();
+    }
+
+    handleWorldTap(pointer) {
+        const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+        const tool = runtime.world.activeTool;
+
+        if (tool === "settler") {
+            runtime.world.spawnAgentAt(worldPoint.x, worldPoint.y);
+        } else if (tool === "wood") {
+            runtime.world.createResourceAt("wood", worldPoint.x, worldPoint.y, 10);
+        } else if (tool === "berries") {
+            runtime.world.createResourceAt("berries", worldPoint.x, worldPoint.y, 6);
+        } else if (tool === "inspect") {
+            const selected = runtime.world.getInspectableAt(worldPoint.x, worldPoint.y);
+            runtime.world.selectEntity(selected?.type ?? null, selected?.entity?.id ?? null);
+        }
+
+        runtime.ui.render();
+    }
+
+    updateHoverMarker(pointer) {
+        const tool = runtime.world.activeTool;
+        this.hoverMarker.clear();
+        if (!pointer) {
+            return;
+        }
+        const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+        if (tool === "inspect") {
+            const selected = runtime.world.getInspectableAt(worldPoint.x, worldPoint.y);
+            if (!selected) {
+                return;
+            }
+            this.drawSelectionShape(this.hoverMarker, selected.type, selected.entity, 0x9fd2ff, 0.7);
+            return;
+        }
+
+        const color = tool === "settler" ? 0xf3f6f8 : tool === "wood" ? 0xb57c42 : 0xd75d8f;
+        this.hoverMarker.lineStyle(2, color, 0.8);
+        this.hoverMarker.strokeCircle(worldPoint.x, worldPoint.y, tool === "settler" ? 18 : 16);
     }
 
     update(_, deltaMs) {
@@ -132,6 +170,7 @@ export class SocietyScene extends Phaser.Scene {
         this.syncBuildings();
         this.syncAgents();
         this.syncDebugLabels();
+        this.syncSelectionMarker();
     }
 
     syncResources() {
@@ -156,31 +195,24 @@ export class SocietyScene extends Phaser.Scene {
     createResourceView(resource) {
         const g = this.add.graphics();
         if (resource.type === "wood") {
-            // Brown trunk
             g.fillStyle(0x6b3f1f, 1);
             g.fillEllipse(0, 8, 10, 14);
-            // Dark shadow beneath canopy
             g.fillStyle(0x1a2e12, 0.35);
             g.fillEllipse(2, -4, 28, 18);
-            // Back canopy layer
             g.fillStyle(0x2d5a1b, 1);
             g.fillCircle(-6, -8, 12);
             g.fillCircle(6, -8, 12);
-            // Front canopy
             g.fillStyle(0x3d7a26, 1);
             g.fillCircle(0, -12, 13);
-            // Highlight
             g.fillStyle(0x5aaa38, 0.5);
             g.fillCircle(-3, -15, 6);
         } else if (resource.type === "berries") {
-            // Bush base
             g.fillStyle(0x2a5e1e, 1);
             g.fillEllipse(0, 4, 30, 18);
             g.fillStyle(0x3d7a26, 1);
             g.fillCircle(-8, -2, 9);
             g.fillCircle(8, -2, 9);
             g.fillCircle(0, -6, 10);
-            // Berry dots
             const berryColor = 0xe0437a;
             const spots = [[-6, -4], [6, -5], [0, -9], [-10, 2], [10, 2], [1, 3]];
             for (const [bx, by] of spots) {
@@ -190,7 +222,6 @@ export class SocietyScene extends Phaser.Scene {
                 g.fillCircle(bx - 1, by - 1, 1.5);
             }
         } else {
-            // Stone — grey lumpy shape
             g.fillStyle(0x5a6870, 1);
             g.fillEllipse(0, 4, 24, 14);
             g.fillStyle(0x7f8c96, 1);
@@ -208,7 +239,6 @@ export class SocietyScene extends Phaser.Scene {
         view.gfx.setAlpha(alpha);
         view.gfx.setScale(resource.type === "berries" ? 0.9 : 1.0);
     }
-
 
     syncBuildings() {
         const liveIds = new Set();
@@ -242,13 +272,12 @@ export class SocietyScene extends Phaser.Scene {
         }
     }
 
-    createBuildingShape(building) {
+    createBuildingShape() {
         const g = this.add.graphics();
         return { kind: "shape", node: g };
     }
 
     createBuildingSprite(building) {
-        // Ground shadow beneath house
         const shadow = this.add.rectangle(
             building.x, building.y + 10,
             building.footprint.w * 56 + 8,
@@ -256,7 +285,6 @@ export class SocietyScene extends Phaser.Scene {
             0x000000, 0.28
         );
         shadow.setDepth(1);
-        // Ground base (hides white sprite edge)
         const base = this.add.rectangle(
             building.x, building.y + 4,
             building.footprint.w * 56,
@@ -281,7 +309,6 @@ export class SocietyScene extends Phaser.Scene {
             view.node.setDisplaySize(fw, fh);
             view.node.setAlpha(0.97);
         } else {
-            // Shape-based (bed, farm, construction placeholder)
             const g = view.node;
             g.clear();
             const hw = building.footprint.w * 34;
@@ -289,35 +316,30 @@ export class SocietyScene extends Phaser.Scene {
             if (building.constructed) {
                 if (building.type === "bed") {
                     g.fillStyle(0x8a7050, 0.9);
-                    g.fillRoundedRect(-hw/2, -hh/2, hw, hh, 5);
+                    g.fillRoundedRect(-hw / 2, -hh / 2, hw, hh, 5);
                     g.lineStyle(1.5, 0xd4b896, 0.7);
-                    g.strokeRoundedRect(-hw/2, -hh/2, hw, hh, 5);
-                    // Bed linens
+                    g.strokeRoundedRect(-hw / 2, -hh / 2, hw, hh, 5);
                     g.fillStyle(0xe8dcc8, 0.7);
-                    g.fillRoundedRect(-hw/2 + 3, -hh/2 + 4, hw - 6, hh * 0.55, 3);
+                    g.fillRoundedRect(-hw / 2 + 3, -hh / 2 + 4, hw - 6, hh * 0.55, 3);
                 } else if (building.type === "farm") {
-                    // Soil rows
                     g.fillStyle(0x5c3d1e, 0.9);
-                    g.fillRoundedRect(-hw/2, -hh/2, hw, hh, 4);
+                    g.fillRoundedRect(-hw / 2, -hh / 2, hw, hh, 4);
                     const rows = 4;
                     for (let r = 0; r < rows; r++) {
-                        const ry = -hh/2 + 6 + r * (hh / rows);
+                        const ry = -hh / 2 + 6 + r * (hh / rows);
                         g.fillStyle(0x3d7a26, 0.7);
-                        g.fillRoundedRect(-hw/2 + 4, ry, hw - 8, hh / rows - 6, 2);
+                        g.fillRoundedRect(-hw / 2 + 4, ry, hw - 8, hh / rows - 6, 2);
                     }
                     g.lineStyle(1, 0x8bc34a, 0.5);
-                    g.strokeRoundedRect(-hw/2, -hh/2, hw, hh, 4);
+                    g.strokeRoundedRect(-hw / 2, -hh / 2, hw, hh, 4);
                 }
             } else {
-                // Under construction — dashed/dotted outline
                 const prog = building.progress / (building.type === "shelter" ? 8 : building.type === "farm" ? 9 : 5);
                 g.lineStyle(2, 0xffd700, 0.6);
-                g.strokeRect(-hw/2, -hh/2, hw, hh);
-                // Progress fill
+                g.strokeRect(-hw / 2, -hh / 2, hw, hh);
                 g.fillStyle(0xffd700, 0.12);
-                g.fillRect(-hw/2, -hh/2, hw, hh * prog);
-                // Corner markers
-                const corners = [[-hw/2,-hh/2],[hw/2,-hh/2],[-hw/2,hh/2],[hw/2,hh/2]];
+                g.fillRect(-hw / 2, -hh / 2, hw, hh * prog);
+                const corners = [[-hw / 2, -hh / 2], [hw / 2, -hh / 2], [-hw / 2, hh / 2], [hw / 2, hh / 2]];
                 for (const [cx, cy] of corners) {
                     g.fillStyle(0xffd700, 0.8);
                     g.fillRect(cx - 3, cy - 3, 6, 6);
@@ -354,14 +376,6 @@ export class SocietyScene extends Phaser.Scene {
                 this.agentViews.delete(id);
             }
         }
-
-        const selected = runtime.world.getSelectedAgent();
-        if (selected) {
-            this.selectionRing.setVisible(true);
-            this.selectionRing.setPosition(selected.x, selected.y);
-        } else {
-            this.selectionRing.setVisible(false);
-        }
     }
 
     syncDebugLabels() {
@@ -389,5 +403,29 @@ export class SocietyScene extends Phaser.Scene {
             text.setDepth(10);
             this.debugLabels.push(text);
         }
+    }
+
+    syncSelectionMarker() {
+        this.selectionMarker.clear();
+        const selected = runtime.world.getSelectedEntity();
+        if (!selected) {
+            return;
+        }
+        this.drawSelectionShape(this.selectionMarker, selected.type, selected.entity, 0xfff1a6, 1);
+    }
+
+    drawSelectionShape(graphics, type, entity, color, alpha) {
+        graphics.lineStyle(3, color, alpha);
+        if (type === "agent") {
+            graphics.strokeCircle(entity.x, entity.y, 20);
+            return;
+        }
+        if (type === "building") {
+            const width = entity.footprint.w * 40;
+            const height = entity.footprint.h * 40;
+            graphics.strokeRoundedRect(entity.x - width / 2, entity.y - height / 2, width, height, 10);
+            return;
+        }
+        graphics.strokeCircle(entity.x, entity.y, 18);
     }
 }
