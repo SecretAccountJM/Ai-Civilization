@@ -8,237 +8,53 @@
     <style>
         :root {
             --bg: #0b1215;
-            --bg-soft: #101b1f;
-            --panel: rgba(14, 23, 28, 0.94);
-            --panel-soft: rgba(27, 42, 49, 0.88);
-            --line: rgba(146, 181, 171, 0.16);
-            --line-strong: rgba(146, 181, 171, 0.24);
+            --panel: rgba(11, 18, 22, 0.88);
+            --panel-solid: #0e171c;
+            --line: rgba(146, 181, 171, 0.15);
+            --line-strong: rgba(146, 181, 171, 0.26);
             --text: #eef5ee;
-            --muted: #98aea5;
+            --muted: #7a9a90;
             --accent: #86d288;
-            --accent-soft: rgba(134, 210, 136, 0.12);
+            --accent-soft: rgba(134, 210, 136, 0.13);
             --accent-strong: #d4f78d;
             --warn: #f0c170;
+            --warn-soft: rgba(240, 193, 112, 0.13);
             --danger: #eb7e69;
-            --chip: #22363e;
-            --shadow: 0 24px 60px rgba(0, 0, 0, 0.32);
+            --danger-soft: rgba(235, 126, 105, 0.13);
+            --chip: rgba(30, 50, 58, 0.9);
+            --chip-hover: rgba(43, 67, 76, 0.95);
+            --shadow: 0 8px 32px rgba(0,0,0,0.45);
+            --radius: 14px;
+            --sidebar-w: 300px;
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         html, body {
-            margin: 0;
-            min-height: 100%;
-        }
-
-        body {
-            background:
-                radial-gradient(circle at top left, rgba(95, 152, 104, 0.16), transparent 24%),
-                radial-gradient(circle at top right, rgba(104, 137, 162, 0.1), transparent 24%),
-                linear-gradient(135deg, #0a1013 0%, #10181c 48%, #0d1417 100%);
+            width: 100%; height: 100%; overflow: hidden;
+            background: #0d1a14;
             color: var(--text);
-            font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+            font-family: "Segoe UI", system-ui, sans-serif;
+            font-size: 13px;
         }
 
+        /* ── LAYOUT ── */
         #app {
             display: grid;
-            grid-template-columns: minmax(0, 1.7fr) minmax(340px, 0.9fr);
-            gap: 18px;
-            min-height: 100vh;
-            padding: 18px;
+            grid-template-columns: 1fr var(--sidebar-w);
+            width: 100%; height: 100vh;
         }
 
-        .panel {
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: 22px;
-            box-shadow: var(--shadow);
+        /* ── MAP AREA ── */
+        #map-area {
+            position: relative;
             overflow: hidden;
-            min-width: 0;
-        }
-
-        #sim-panel {
-            display: flex;
-            flex-direction: column;
-            min-height: calc(100vh - 36px);
-        }
-
-        .topbar {
-            padding: 18px 20px 16px;
-            border-bottom: 1px solid var(--line);
-            background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent);
-        }
-
-        .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            padding: 7px 12px;
-            border-radius: 999px;
-            background: var(--accent-soft);
-            color: var(--accent-strong);
-            font-size: 0.74rem;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        .topbar h1,
-        .panel-header h2,
-        .panel-header p {
-            margin: 0;
-        }
-
-        .topbar h1 {
-            margin-top: 12px;
-            font-size: clamp(1.9rem, 3vw, 3rem);
-            line-height: 1;
-        }
-
-        .topbar p {
-            margin: 10px 0 0;
-            max-width: 64ch;
-            color: var(--muted);
-            font-size: 1rem;
-            line-height: 1.5;
-        }
-
-        .loop-strip {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 14px;
-        }
-
-        .loop-step,
-        .watch-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 12px;
-            border-radius: 14px;
-            border: 1px solid var(--line);
-            background: rgba(255,255,255,0.03);
-            font-size: 0.9rem;
-        }
-
-        .watch-row {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 12px;
-            margin-top: 14px;
-        }
-
-        .watch-chip strong {
-            display: block;
-            color: var(--text);
-            font-size: 0.9rem;
-        }
-
-        .watch-chip span {
-            display: block;
-            color: var(--muted);
-            font-size: 0.82rem;
-            line-height: 1.35;
-        }
-
-        .control-bar {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 20px;
-            border-bottom: 1px solid var(--line);
-            background: rgba(255,255,255,0.015);
-        }
-
-        .control-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .control-label {
-            margin-right: 2px;
-            align-self: center;
-            color: var(--muted);
-            font-size: 0.78rem;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-        }
-
-        button {
-            appearance: none;
-            border: 1px solid var(--line);
-            background: var(--chip);
-            color: var(--text);
-            border-radius: 999px;
-            padding: 9px 14px;
-            font: inherit;
-            cursor: pointer;
-            transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-        }
-
-        button:hover {
-            transform: translateY(-1px);
-            background: #2b434c;
-            border-color: rgba(212, 247, 141, 0.32);
-        }
-
-        button.active {
-            background: #37564f;
-            border-color: rgba(212, 247, 141, 0.42);
-            color: var(--accent-strong);
-        }
-
-        .stage-shell {
-            display: grid;
-            grid-template-rows: auto minmax(0, 1fr);
-            gap: 12px;
-            padding: 16px 18px 18px;
-            min-height: 0;
-            flex: 1;
-        }
-
-        .stage-meta {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
-            gap: 12px;
-            align-items: start;
-        }
-
-        .stage-objective,
-        .stage-rule {
-            padding: 14px 16px;
-            border-radius: 16px;
-            border: 1px solid var(--line);
-            background: var(--panel-soft);
-        }
-
-        .stage-objective strong,
-        .stage-rule strong {
-            display: block;
-            margin-bottom: 6px;
-            color: var(--muted);
-            font-size: 0.76rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
-
-        .stage-objective p,
-        .stage-rule p {
-            margin: 0;
-            line-height: 1.45;
+            background: #111a16;
         }
 
         #game-container {
-            min-height: 560px;
-            height: 100%;
-            border: 1px solid var(--line-strong);
-            border-radius: 22px;
-            overflow: hidden;
-            position: relative;
-            background:
-                linear-gradient(180deg, rgba(75, 101, 64, 0.12), rgba(20, 30, 24, 0.24)),
-                linear-gradient(135deg, #17221d, #111a16);
+            position: absolute;
+            inset: 0;
         }
 
         #game-container canvas {
@@ -248,364 +64,760 @@
             image-rendering: pixelated;
         }
 
-        #sidebar {
-            display: grid;
-            gap: 16px;
-            align-content: start;
-            min-width: 0;
+        /* ── FLOATING HUD OVER MAP ── */
+        .hud-overlay {
+            position: absolute;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .hud-overlay > * { pointer-events: auto; }
+
+        /* Top-left: title + sim controls */
+        #hud-tl {
+            top: 12px; left: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 420px;
         }
 
-        .panel-header {
-            padding: 18px 20px 14px;
+        .title-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--panel);
+            border: 1px solid var(--line-strong);
+            border-radius: 999px;
+            padding: 6px 14px;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+        }
+
+        .title-chip .dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 6px var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .title-chip strong {
+            font-size: 0.85rem;
+            letter-spacing: 0.04em;
+            color: var(--text);
+        }
+
+        .title-chip .phase-badge {
+            margin-left: 4px;
+            font-size: 0.72rem;
+            color: var(--accent-strong);
+            background: var(--accent-soft);
+            border-radius: 999px;
+            padding: 2px 8px;
+        }
+
+        /* Control bar floating */
+        #control-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            background: var(--panel);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius);
+            padding: 8px 10px;
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow);
+        }
+
+        .ctrl-divider {
+            width: 1px;
+            background: var(--line-strong);
+            margin: 2px 2px;
+            align-self: stretch;
+        }
+
+        /* Bottom-left: tool picker */
+        #hud-bl {
+            bottom: 12px; left: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #tool-bar {
+            display: flex;
+            gap: 6px;
+            background: var(--panel);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius);
+            padding: 8px 10px;
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow);
+        }
+
+        #tool-hint {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 7px 12px;
+            backdrop-filter: blur(10px);
+            color: var(--muted);
+            font-size: 0.78rem;
+            max-width: 360px;
+            line-height: 1.4;
+        }
+
+        #tool-hint strong {
+            color: var(--accent-strong);
+            margin-right: 4px;
+        }
+
+        /* Bottom-right: mini stat strip */
+        #hud-br {
+            bottom: 12px; right: calc(var(--sidebar-w) + 12px);
+        }
+
+        #stat-strip {
+            display: flex;
+            gap: 6px;
+            background: var(--panel);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius);
+            padding: 8px 12px;
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow);
+        }
+
+        .mini-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-width: 40px;
+        }
+
+        .mini-stat .ms-icon {
+            font-size: 0.9rem;
+        }
+
+        .mini-stat .ms-val {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .mini-stat .ms-label {
+            font-size: 0.65rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .mini-stat.warn .ms-val { color: var(--warn); }
+        .mini-stat.danger .ms-val { color: var(--danger); }
+        .mini-stat.good .ms-val { color: var(--accent); }
+
+        .ms-sep {
+            width: 1px;
+            background: var(--line);
+            align-self: stretch;
+            margin: 0 2px;
+        }
+
+        /* Top-right corner: day/time badge */
+        #hud-tr {
+            top: 12px; right: calc(var(--sidebar-w) + 12px);
+        }
+
+        #time-badge {
+            background: var(--panel);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius);
+            padding: 8px 14px;
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow);
+            text-align: right;
+        }
+
+        #time-badge .day-label {
+            font-size: 0.7rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+
+        #time-badge .day-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-strong);
+            line-height: 1.2;
+        }
+
+        #time-badge .time-value {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        /* ── BUTTONS ── */
+        button {
+            appearance: none;
+            border: 1px solid var(--line);
+            background: var(--chip);
+            color: var(--text);
+            border-radius: 8px;
+            padding: 6px 11px;
+            font: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.12s, border-color 0.12s, color 0.12s;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            background: var(--chip-hover);
+            border-color: var(--line-strong);
+        }
+
+        button.active {
+            background: rgba(134, 210, 136, 0.18);
+            border-color: rgba(212, 247, 141, 0.45);
+            color: var(--accent-strong);
+        }
+
+        button.danger-btn.active {
+            background: var(--danger-soft);
+            border-color: rgba(235, 126, 105, 0.4);
+            color: var(--danger);
+        }
+
+        .tool-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tool-btn .tb-icon {
+            font-size: 0.95rem;
+        }
+
+        .speed-btn { min-width: 34px; text-align: center; }
+
+        /* ── SIDEBAR ── */
+        #sidebar {
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: var(--panel-solid);
+            border-left: 1px solid var(--line-strong);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* sidebar header */
+        .sb-header {
+            padding: 12px 14px 10px;
+            border-bottom: 1px solid var(--line);
+            flex-shrink: 0;
+        }
+
+        .sb-header h1 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: 0.02em;
+        }
+
+        .sb-header p {
+            font-size: 0.74rem;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* tabs */
+        .sb-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--line);
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .sb-tab {
+            flex: 1;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            border-radius: 0;
+            padding: 9px 4px;
+            font-size: 0.75rem;
+            color: var(--muted);
+            cursor: pointer;
+            transition: color 0.12s, border-color 0.12s;
+            text-align: center;
+        }
+
+        .sb-tab.active {
+            color: var(--accent-strong);
+            border-bottom-color: var(--accent);
+            background: none;
+        }
+
+        .sb-tab:hover:not(.active) {
+            color: var(--text);
+            border-bottom-color: var(--line-strong);
+            background: none;
+        }
+
+        /* tab panels */
+        .sb-panel {
+            display: none;
+            flex-direction: column;
+            gap: 0;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .sb-panel.active { display: flex; }
+
+        .sb-section {
+            padding: 12px 14px;
             border-bottom: 1px solid var(--line);
         }
 
-        .panel-header h2 {
-            font-size: 1.1rem;
-            line-height: 1.1;
-        }
+        .sb-section:last-child { border-bottom: none; }
 
-        .panel-header p {
-            margin-top: 8px;
-            color: var(--muted);
-            line-height: 1.45;
-        }
-
-        .stack {
-            display: grid;
-            gap: 12px;
-            padding: 14px 16px 16px;
-        }
-
-        .summary-band {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
-        }
-
-        .summary-card {
-            padding: 12px;
-            border-radius: 14px;
-            border: 1px solid var(--line);
-            background: rgba(255,255,255,0.02);
-        }
-
-        .summary-card strong,
-        .summary-card span,
-        .summary-card small {
-            display: block;
-        }
-
-        .summary-card strong {
-            color: var(--muted);
-            font-size: 0.76rem;
+        .sb-section-title {
+            font-size: 0.68rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .summary-card span {
-            margin-top: 6px;
-            font-size: 1.18rem;
-        }
-
-        .summary-card small {
-            margin-top: 4px;
+            letter-spacing: 0.08em;
             color: var(--muted);
-            font-size: 0.8rem;
+            margin-bottom: 8px;
+            font-weight: 600;
         }
 
+        /* stat grid in sidebar */
         .stat-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
         }
 
         .stat-card {
-            padding: 12px;
-            border-radius: 12px;
-            background: rgba(255,255,255,0.02);
+            background: rgba(255,255,255,0.03);
             border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 8px 6px;
+            text-align: center;
         }
 
-        .stat-card.warn {
-            border-color: rgba(240, 193, 112, 0.34);
-        }
-
-        .stat-card.soft {
-            border-color: rgba(146, 181, 171, 0.26);
-        }
-
-        .stat-card strong,
-        .stat-card span {
-            display: block;
-        }
+        .stat-card.warn { border-color: rgba(240,193,112,0.3); background: var(--warn-soft); }
+        .stat-card.danger { border-color: rgba(235,126,105,0.3); background: var(--danger-soft); }
+        .stat-card.good { border-color: rgba(134,210,136,0.25); background: var(--accent-soft); }
 
         .stat-card strong {
+            display: block;
+            font-size: 0.62rem;
             color: var(--muted);
-            font-size: 0.76rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            margin-bottom: 4px;
         }
 
         .stat-card span {
-            margin-top: 6px;
-            font-size: 1rem;
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .stat-card.warn span { color: var(--warn); }
+        .stat-card.danger span { color: var(--danger); }
+        .stat-card.good span { color: var(--accent); }
+
+        /* summary cards */
+        .summary-band {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .summary-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .summary-card strong {
+            display: block;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .summary-card span {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .summary-card small {
+            display: block;
+            font-size: 0.72rem;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* inspector */
+        .inspector-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .inspector-header h3 {
+            font-size: 0.95rem;
+            color: var(--text);
+        }
+
+        .badge {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent-strong);
+            border: 1px solid rgba(134,210,136,0.2);
         }
 
         .detail-list {
             display: grid;
-            gap: 10px;
-            font-size: 0.94rem;
-        }
-
-        .detail-list.compact {
-            font-size: 0.9rem;
+            gap: 7px;
         }
 
         .detail-list div {
             display: flex;
             justify-content: space-between;
-            gap: 12px;
+            align-items: baseline;
+            gap: 8px;
+            font-size: 0.8rem;
         }
 
         .detail-list strong {
             color: var(--muted);
             font-weight: 600;
+            flex-shrink: 0;
         }
 
-        .inspector-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-
-        .inspector-header h3 {
-            margin: 0;
-            font-size: 1.02rem;
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 5px 9px;
-            border-radius: 999px;
-            background: rgba(212, 247, 141, 0.1);
-            color: var(--accent-strong);
-            font-size: 0.74rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
+        .detail-list span {
+            color: var(--text);
+            text-align: right;
+            word-break: break-word;
         }
 
         .empty-copy {
-            margin: 0;
             color: var(--muted);
+            font-size: 0.82rem;
+            text-align: center;
+            padding: 24px 0;
         }
 
+        /* event feed */
         #social-feed {
-            max-height: 360px;
-            overflow-y: auto;
-            display: grid;
-            gap: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
 
         .feed-item {
-            border-left: 4px solid var(--accent);
-            padding: 10px 12px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
+            border-left: 3px solid var(--accent);
+            padding: 8px 10px;
+            background: rgba(255,255,255,0.025);
+            border-radius: 8px;
+            transition: background 0.15s;
         }
+
+        .feed-item:hover { background: rgba(255,255,255,0.045); }
 
         .feed-item[data-tone="warning"] { border-left-color: var(--warn); }
         .feed-item[data-tone="danger"] { border-left-color: var(--danger); }
 
-        .feed-item strong,
-        .feed-item span { display: block; }
-
         .feed-item strong {
-            color: #c8f3ff;
-            margin-bottom: 4px;
+            display: block;
+            font-size: 0.75rem;
+            color: #a8d8f0;
+            margin-bottom: 2px;
+        }
+
+        .feed-item div {
+            font-size: 0.78rem;
+            color: var(--text);
+            line-height: 1.35;
         }
 
         .feed-item span {
+            display: block;
+            font-size: 0.7rem;
             color: var(--muted);
+            margin-top: 3px;
+        }
+
+        /* scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
+
+        /* pressure bar */
+        .pressure-bar-wrap {
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            height: 6px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .pressure-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.4s ease;
+        }
+
+        /* world status list */
+        .world-status-list {
+            display: grid;
+            gap: 6px;
+        }
+
+        .world-status-list div {
+            display: flex;
+            justify-content: space-between;
             font-size: 0.8rem;
-            margin-top: 6px;
+            gap: 8px;
         }
 
-        @media (max-width: 1240px) {
-            #app {
-                grid-template-columns: 1fr;
-            }
+        .world-status-list strong { color: var(--muted); flex-shrink: 0; }
+        .world-status-list span { color: var(--text); text-align: right; }
 
-            #sim-panel {
-                min-height: auto;
-            }
+        /* spawn buttons row */
+        .spawn-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
         }
 
-        @media (max-width: 860px) {
-            #app {
-                padding: 10px;
-                gap: 12px;
-            }
-
-            .watch-row,
-            .stage-meta {
-                grid-template-columns: 1fr;
-            }
-
-            .summary-band,
-            .stat-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .detail-list div {
-                flex-direction: column;
-                align-items: flex-start;
-            }
+        .spawn-row button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 8px 4px;
+            border-radius: 10px;
+            font-size: 0.72rem;
         }
 
-        @media (max-width: 640px) {
-            .summary-band,
-            .stat-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .control-bar,
-            .control-group,
-            .loop-strip {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            button {
-                width: 100%;
-            }
-
-            #game-container {
-                min-height: 420px;
-            }
-        }
+        .spawn-row button .sp-icon { font-size: 1.1rem; }
     </style>
 </head>
 <body>
-    <div id="app">
-        <section class="panel" id="sim-panel">
-            <div class="topbar">
-                <div class="eyebrow">HTML5 Civilization Sandbox</div>
-                <h1>Autonomous Society</h1>
-                <p>A browser civilization sandbox focused on a readable core loop: gather, build, expand, react, and specialize. AI should make the settlement feel alive through behavior and adaptation, not just text.</p>
+<div id="app">
 
-                <div class="loop-strip">
-                    <div class="loop-step">Gather</div>
-                    <div class="loop-step">Build</div>
-                    <div class="loop-step">Expand</div>
-                    <div class="loop-step">React</div>
-                    <div class="loop-step">Specialize</div>
-                </div>
+    <!-- ══ MAP AREA ══ -->
+    <div id="map-area">
+        <div id="game-container"></div>
 
-                <div class="watch-row">
-                    <div class="watch-chip">
-                        <div>
-                            <strong>Readable Systems</strong>
-                            <span>Keep the simulation shallow but believable across economy, settlement growth, and survival pressure.</span>
-                        </div>
-                    </div>
-                    <div class="watch-chip">
-                        <div>
-                            <strong>AI For Behavior</strong>
-                            <span>Settlers should reveal goals, memory, and adaptation through actions you can watch on the map.</span>
-                        </div>
-                    </div>
-                    <div class="watch-chip">
-                        <div>
-                            <strong>Watchability</strong>
-                            <span>The world should remain understandable through summaries, event logs, and visible state changes.</span>
-                        </div>
-                    </div>
-                </div>
+        <!-- Top-left: title + controls -->
+        <div class="hud-overlay" id="hud-tl">
+            <div class="title-chip">
+                <span class="dot"></span>
+                <strong>Autonomous Society</strong>
+                <span class="phase-badge" id="phase-badge">Founding</span>
             </div>
 
-            <div class="control-bar">
-                <div class="control-group">
-                    <span class="control-label">Simulation</span>
-                    <button id="pause-btn">Pause</button>
-                    <button class="speed-btn active" data-speed="1">x1</button>
-                    <button class="speed-btn" data-speed="2">x2</button>
-                    <button class="speed-btn" data-speed="4">x4</button>
-                    <button id="debug-btn" class="active">Hide Debug</button>
-                </div>
+            <div id="control-bar">
+                <span style="font-size:0.72rem;color:var(--muted);align-self:center;margin-right:2px;">SIM</span>
+                <button id="pause-btn">⏸ Pause</button>
+                <button class="speed-btn active" data-speed="1">x1</button>
+                <button class="speed-btn" data-speed="2">x2</button>
+                <button class="speed-btn" data-speed="4">x4</button>
+                <div class="ctrl-divider"></div>
+                <button id="debug-btn" class="active">🐛 Debug</button>
+            </div>
+        </div>
 
-                <div class="control-group">
-                    <span class="control-label">Sandbox</span>
-                    <button class="tool-btn active" data-tool="inspect">Inspect</button>
-                    <button class="tool-btn" data-tool="settler">Place Settler</button>
-                    <button class="tool-btn" data-tool="wood">Plant Wood</button>
-                    <button class="tool-btn" data-tool="berries">Plant Berries</button>
-                    <button id="spawn-agent-btn">Spawn At Camera</button>
-                    <button id="spawn-wood-btn">Wood At Camera</button>
-                    <button id="spawn-berries-btn">Berries At Camera</button>
+        <!-- Top-right: day/time -->
+        <div class="hud-overlay" id="hud-tr">
+            <div id="time-badge">
+                <div class="day-label">In-Game Time</div>
+                <div class="day-value" id="hud-day">Day 1</div>
+                <div class="time-value" id="hud-time">Dawn</div>
+            </div>
+        </div>
+
+        <!-- Bottom-left: tools -->
+        <div class="hud-overlay" id="hud-bl">
+            <div id="tool-hint">
+                <strong id="active-tool-label">Inspect</strong>
+                <span id="sandbox-rule-copy">Click a settler, building, or resource to inspect.</span>
+            </div>
+            <div id="tool-bar">
+                <button class="tool-btn active" data-tool="inspect"><span class="tb-icon">🔍</span> Inspect</button>
+                <button class="tool-btn" data-tool="settler"><span class="tb-icon">👤</span> Settler</button>
+                <button class="tool-btn" data-tool="wood"><span class="tb-icon">🌲</span> Wood</button>
+                <button class="tool-btn" data-tool="berries"><span class="tb-icon">🫐</span> Berries</button>
+            </div>
+        </div>
+
+        <!-- Bottom-right: mini stats -->
+        <div class="hud-overlay" id="hud-br">
+            <div id="stat-strip">
+                <div class="mini-stat good" id="ms-pop">
+                    <span class="ms-icon">👥</span>
+                    <span class="ms-val" id="ms-pop-val">0</span>
+                    <span class="ms-label">Pop</span>
+                </div>
+                <div class="ms-sep"></div>
+                <div class="mini-stat" id="ms-food">
+                    <span class="ms-icon">🍇</span>
+                    <span class="ms-val" id="ms-food-val">0</span>
+                    <span class="ms-label">Food</span>
+                </div>
+                <div class="ms-sep"></div>
+                <div class="mini-stat" id="ms-wood">
+                    <span class="ms-icon">🪵</span>
+                    <span class="ms-val" id="ms-wood-val">0</span>
+                    <span class="ms-label">Wood</span>
+                </div>
+                <div class="ms-sep"></div>
+                <div class="mini-stat" id="ms-stone">
+                    <span class="ms-icon">🪨</span>
+                    <span class="ms-val" id="ms-stone-val">0</span>
+                    <span class="ms-label">Stone</span>
+                </div>
+                <div class="ms-sep"></div>
+                <div class="mini-stat" id="ms-stability">
+                    <span class="ms-icon">📊</span>
+                    <span class="ms-val" id="ms-stab-val">—</span>
+                    <span class="ms-label">Stable</span>
+                </div>
+                <div class="ms-sep"></div>
+                <div class="mini-stat" id="ms-needs">
+                    <span class="ms-icon">⚠️</span>
+                    <span class="ms-val" id="ms-needs-val">0</span>
+                    <span class="ms-label">Needs</span>
                 </div>
             </div>
-
-            <div class="stage-shell">
-                <div class="stage-meta">
-                    <div class="stage-objective">
-                        <strong>Current Objective</strong>
-                        <p>Grow a stable settlement with enough food, beds, and work so the simulation produces visible stories instead of random noise.</p>
-                    </div>
-                    <div class="stage-rule">
-                        <strong>Active Tool</strong>
-                        <p><span id="active-tool-label">Inspect</span></p>
-                        <p id="sandbox-rule-copy">Placement respects world bounds and avoids obvious overlap with buildings and duplicate resource clusters.</p>
-                    </div>
-                </div>
-
-                <div id="game-container"></div>
-            </div>
-        </section>
-
-        <aside id="sidebar">
-            <section class="panel">
-                <div class="panel-header">
-                    <h2>Village Summary</h2>
-                    <p>Progress should be obvious. These metrics show whether the settlement is stable, growing, and reacting well to pressure.</p>
-                </div>
-                <div class="stack">
-                    <div id="summary-band" class="summary-band"></div>
-                    <div id="village-summary" class="stat-grid"></div>
-                </div>
-            </section>
-
-            <section class="panel">
-                <div class="panel-header">
-                    <h2>World Status</h2>
-                    <p>Use this to understand what the sandbox is doing now, why it matters, and how to intervene without guessing.</p>
-                </div>
-                <div id="world-status" class="stack"></div>
-            </section>
-
-            <section class="panel">
-                <div class="panel-header">
-                    <h2>Inspector</h2>
-                    <p>Watchability depends on seeing intent. Inspect settlers, buildings, and resource nodes from one consistent panel.</p>
-                </div>
-                <div id="selected-entity" class="stack"></div>
-            </section>
-
-            <section class="panel">
-                <div class="panel-header">
-                    <h2>Event Log</h2>
-                    <p>Emergent stories should come from system interaction: hunger, building progress, jobs, expansion, and sandbox intervention.</p>
-                </div>
-                <div class="stack">
-                    <div id="social-feed"></div>
-                </div>
-            </section>
-        </aside>
+        </div>
     </div>
 
-    <script type="module" src="./game/main.js"></script>
+    <!-- ══ SIDEBAR ══ -->
+    <aside id="sidebar">
+        <div class="sb-header">
+            <h1>Village Dashboard</h1>
+            <p>Live settlement overview</p>
+        </div>
+
+        <div class="sb-tabs">
+            <button class="sb-tab active" data-tab="overview">Overview</button>
+            <button class="sb-tab" data-tab="inspector">Inspector</button>
+            <button class="sb-tab" data-tab="feed">Events</button>
+            <button class="sb-tab" data-tab="spawn">Spawn</button>
+        </div>
+
+        <!-- OVERVIEW TAB -->
+        <div class="sb-panel active" id="tab-overview">
+            <div class="sb-section">
+                <div class="sb-section-title">Settlement Phase</div>
+                <div id="summary-band" class="summary-band"></div>
+            </div>
+            <div class="sb-section">
+                <div class="sb-section-title">Key Metrics</div>
+                <div id="village-summary" class="stat-grid"></div>
+            </div>
+            <div class="sb-section">
+                <div class="sb-section-title">World Status</div>
+                <div id="world-status" class="world-status-list"></div>
+            </div>
+        </div>
+
+        <!-- INSPECTOR TAB -->
+        <div class="sb-panel" id="tab-inspector">
+            <div class="sb-section">
+                <div class="sb-section-title">Selected Entity</div>
+                <div id="selected-entity">
+                    <p class="empty-copy">Click a settler, building, or resource node on the map.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- EVENTS TAB -->
+        <div class="sb-panel" id="tab-feed">
+            <div class="sb-section">
+                <div class="sb-section-title">Event Log</div>
+                <div id="social-feed"></div>
+            </div>
+        </div>
+
+        <!-- SPAWN TAB -->
+        <div class="sb-panel" id="tab-spawn">
+            <div class="sb-section">
+                <div class="sb-section-title">Spawn At Camera Center</div>
+                <div class="spawn-row">
+                    <button id="spawn-agent-btn">
+                        <span class="sp-icon">👤</span>
+                        Settler
+                    </button>
+                    <button id="spawn-wood-btn">
+                        <span class="sp-icon">🌲</span>
+                        Wood
+                    </button>
+                    <button id="spawn-berries-btn">
+                        <span class="sp-icon">🫐</span>
+                        Berries
+                    </button>
+                </div>
+            </div>
+            <div class="sb-section">
+                <div class="sb-section-title">Simulation Info</div>
+                <div class="world-status-list">
+                    <div><strong>Core Loop</strong><span>Gather → Build → Expand → React → Specialize</span></div>
+                    <div><strong>Pan</strong><span>Click + drag on map</span></div>
+                    <div><strong>Zoom</strong><span>Scroll wheel</span></div>
+                    <div><strong>Inspect</strong><span>Click any entity</span></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<script>
+    // Tab switching
+    document.querySelectorAll('.sb-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.sb-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.sb-panel').forEach(p => p.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+        });
+    });
+
+    // Auto-switch to inspector when entity is selected
+    window._switchToInspector = () => {
+        document.querySelectorAll('.sb-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.sb-panel').forEach(p => p.classList.remove('active'));
+        document.querySelector('[data-tab="inspector"]').classList.add('active');
+        document.getElementById('tab-inspector').classList.add('active');
+    };
+</script>
+
+<script type="module" src="./game/main.js"></script>
 </body>
 </html>

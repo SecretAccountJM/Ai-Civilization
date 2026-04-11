@@ -12,20 +12,42 @@ export class SimulationUI {
     constructor(world) {
         this.world = world;
         this.scene = null;
-        this.summaryBandElement = document.getElementById("summary-band");
-        this.summaryElement = document.getElementById("village-summary");
-        this.selectedElement = document.getElementById("selected-entity");
-        this.worldStatusElement = document.getElementById("world-status");
-        this.activeToolElement = document.getElementById("active-tool-label");
+
+        // Sidebar panels
+        this.summaryBandElement   = document.getElementById("summary-band");
+        this.summaryElement       = document.getElementById("village-summary");
+        this.selectedElement      = document.getElementById("selected-entity");
+        this.worldStatusElement   = document.getElementById("world-status");
+
+        // HUD overlays
+        this.activeToolElement    = document.getElementById("active-tool-label");
         this.sandboxRuleCopyElement = document.getElementById("sandbox-rule-copy");
+        this.phaseBadgeElement    = document.getElementById("phase-badge");
+        this.hudDayElement        = document.getElementById("hud-day");
+        this.hudTimeElement       = document.getElementById("hud-time");
+
+        // Mini-stat elements
+        this.msPop      = document.getElementById("ms-pop-val");
+        this.msFood     = document.getElementById("ms-food-val");
+        this.msWood     = document.getElementById("ms-wood-val");
+        this.msStone    = document.getElementById("ms-stone-val");
+        this.msStab     = document.getElementById("ms-stab-val");
+        this.msNeeds    = document.getElementById("ms-needs-val");
+        this.msNeedsEl  = document.getElementById("ms-needs");
+        this.msStabEl   = document.getElementById("ms-stability");
+
+        // Feed
         this.feed = new SocialFeed(document.getElementById("social-feed"));
-        this.pauseButton = document.getElementById("pause-btn");
-        this.debugButton = document.getElementById("debug-btn");
-        this.speedButtons = [...document.querySelectorAll(".speed-btn")];
-        this.toolButtons = [...document.querySelectorAll(".tool-btn")];
+
+        // Controls
+        this.pauseButton      = document.getElementById("pause-btn");
+        this.debugButton      = document.getElementById("debug-btn");
+        this.speedButtons     = [...document.querySelectorAll(".speed-btn")];
+        this.toolButtons      = [...document.querySelectorAll(".tool-btn")];
         this.spawnAgentButton = document.getElementById("spawn-agent-btn");
-        this.spawnWoodButton = document.getElementById("spawn-wood-btn");
+        this.spawnWoodButton  = document.getElementById("spawn-wood-btn");
         this.spawnBerriesButton = document.getElementById("spawn-berries-btn");
+
         this.bindControls();
         this.render();
     }
@@ -44,12 +66,11 @@ export class SimulationUI {
     bindControls() {
         this.pauseButton.addEventListener("click", () => {
             this.world.paused = !this.world.paused;
-            this.pauseButton.textContent = this.world.paused ? "Resume" : "Pause";
+            this.pauseButton.textContent = this.world.paused ? "▶ Resume" : "⏸ Pause";
         });
 
         this.debugButton.addEventListener("click", () => {
             this.world.debug = !this.world.debug;
-            this.debugButton.textContent = this.world.debug ? "Hide Debug" : "Show Debug";
             this.debugButton.classList.toggle("active", this.world.debug);
         });
 
@@ -90,32 +111,54 @@ export class SimulationUI {
 
     consumeEvents(events) {
         this.feed.consume(events);
+
+        // Flash event log tab if not active
+        const feedTab = document.querySelector('[data-tab="feed"]');
+        if (feedTab && !feedTab.classList.contains('active') && events.length > 0) {
+            feedTab.style.color = 'var(--accent-strong)';
+            clearTimeout(this._feedFlash);
+            this._feedFlash = setTimeout(() => {
+                feedTab.style.color = '';
+            }, 800);
+        }
     }
 
     renderToolState() {
         for (const button of this.toolButtons) {
             button.classList.toggle("active", button.dataset.tool === this.world.activeTool);
         }
+
         const labels = {
             inspect: "Inspect",
             settler: "Place Settler",
-            wood: "Plant Wood",
+            wood:    "Plant Wood",
             berries: "Plant Berries",
         };
-        this.activeToolElement.textContent = labels[this.world.activeTool] ?? "Inspect";
+
         const rules = {
-            inspect: "Inspect settlers, buildings, and resources to understand goals, bottlenecks, and settlement pressure.",
-            settler: "New settlers snap to the nearest open point so the sandbox does not spawn them inside buildings.",
-            wood: "Wood placement stays inside world bounds and avoids stacking identical nodes on top of each other.",
-            berries: "Berry placement follows the same safe-spacing rule so food sources remain readable and useful.",
+            inspect: "Click any settler, building, or resource node to inspect it.",
+            settler: "Click on the map to place a new settler near that location.",
+            wood:    "Click on the map to plant a wood resource node.",
+            berries: "Click on the map to plant a berry resource node.",
         };
-        this.sandboxRuleCopyElement.textContent = rules[this.world.activeTool] ?? rules.inspect;
+
+        if (this.activeToolElement) {
+            this.activeToolElement.textContent = labels[this.world.activeTool] ?? "Inspect";
+        }
+        if (this.sandboxRuleCopyElement) {
+            this.sandboxRuleCopyElement.textContent = rules[this.world.activeTool] ?? rules.inspect;
+        }
     }
 
     renderSelected(selected) {
         if (!selected) {
-            this.selectedElement.innerHTML = "<p class=\"empty-copy\">Select a settler, building, or resource node.</p>";
+            this.selectedElement.innerHTML = `<p class="empty-copy">Click a settler, building, or resource node on the map.</p>`;
             return;
+        }
+
+        // Auto-switch sidebar to inspector tab when something is selected
+        if (typeof window._switchToInspector === 'function') {
+            window._switchToInspector();
         }
 
         if (selected.type === "agent") {
@@ -144,7 +187,7 @@ export class SimulationUI {
 
         if (selected.type === "building") {
             const storage = Object.entries(selected.storage ?? {})
-                .map(([key, value]) => `${key}:${Math.round(value)}`)
+                .map(([k, v]) => `${k}:${Math.round(v)}`)
                 .join(" ") || "None";
             this.selectedElement.innerHTML = `
                 <div class="inspector-header">
@@ -161,6 +204,7 @@ export class SimulationUI {
             return;
         }
 
+        // Resource node
         this.selectedElement.innerHTML = `
             <div class="inspector-header">
                 <h3>${selected.label}</h3>
@@ -175,35 +219,80 @@ export class SimulationUI {
 
     render() {
         const snapshot = this.world.getVillageSnapshot();
-        this.summaryBandElement.innerHTML = [
-            `<div class="summary-card"><strong>Settlement Phase</strong><span>${snapshot.buildings.shelter > 0 ? "Established" : "Founding"}</span><small>${snapshot.population} settlers shaping the map</small></div>`,
-            `<div class="summary-card"><strong>Main Pressure</strong><span>${snapshot.metrics.unmetNeeds > 0 ? "Survival Needs" : "Expansion"}</span><small>${snapshot.metrics.unmetNeeds > 0 ? `${snapshot.metrics.unmetNeeds} settlers need help` : "The village can afford to build out"}</small></div>`,
-        ].join("");
+        const isEstablished = snapshot.buildings.shelter > 0;
 
-        this.summaryElement.innerHTML = [
-            card("Day", `${snapshot.day} • ${snapshot.timeLabel}`),
-            card("Population", snapshot.population),
-            card("Food", snapshot.metrics.totalFoodToday),
-            card("Stability", `${snapshot.metrics.averageStability}%`, snapshot.metrics.averageStability < 60 ? "warn" : ""),
-            card("Idle", snapshot.metrics.idleAgents, snapshot.metrics.idleAgents > 1 ? "soft" : ""),
-            card("Needs", snapshot.metrics.unmetNeeds, snapshot.metrics.unmetNeeds > 0 ? "warn" : ""),
-            card("Wood", snapshot.resources.wood),
-            card("Stone", snapshot.resources.stone),
-            card("Berries", snapshot.resources.berries),
-            card("Shelters", snapshot.buildings.shelter),
-            card("Beds", snapshot.buildings.bed),
-            card("Farms", snapshot.buildings.farm),
-        ].join("");
+        // ── HUD Overlays ──
+        if (this.phaseBadgeElement) {
+            this.phaseBadgeElement.textContent = isEstablished ? "Established" : "Founding";
+        }
+        if (this.hudDayElement) {
+            this.hudDayElement.textContent = `Day ${snapshot.day}`;
+        }
+        if (this.hudTimeElement) {
+            this.hudTimeElement.textContent = snapshot.timeLabel ?? "";
+        }
 
-        this.worldStatusElement.innerHTML = `
-            <div class="detail-list compact">
-                ${detailRow("Simulation", this.world.paused ? "Paused" : `Running at x${this.world.speed}`)}
-                ${detailRow("Sandbox Tool", this.activeToolElement.textContent || "Inspect")}
-                ${detailRow("Core Loop", "Gather -> Build -> Expand -> React -> Specialize")}
-                ${detailRow("Interaction", "Tap to inspect or place. Drag to pan. Scroll to zoom.")}
-                ${detailRow("Design Goal", "Make settlement pressure and AI behavior visible without constant clicking.")}
-            </div>
-        `;
+        // ── Mini-stats strip ──
+        if (this.msPop)   this.msPop.textContent   = snapshot.population;
+        if (this.msFood)  this.msFood.textContent  = snapshot.metrics.totalFoodToday;
+        if (this.msWood)  this.msWood.textContent  = snapshot.resources.wood;
+        if (this.msStone) this.msStone.textContent = snapshot.resources.stone;
+
+        if (this.msStab) {
+            const stab = snapshot.metrics.averageStability;
+            this.msStab.textContent = `${stab}%`;
+            this.msStabEl?.classList.toggle("warn", stab < 60 && stab >= 40);
+            this.msStabEl?.classList.toggle("danger", stab < 40);
+        }
+
+        if (this.msNeeds) {
+            const needs = snapshot.metrics.unmetNeeds;
+            this.msNeeds.textContent = needs;
+            this.msNeedsEl?.classList.toggle("danger", needs > 0);
+        }
+
+        // ── Summary Band ──
+        if (this.summaryBandElement) {
+            this.summaryBandElement.innerHTML = [
+                `<div class="summary-card">
+                    <strong>Phase</strong>
+                    <span>${isEstablished ? "Established" : "Founding"}</span>
+                    <small>${snapshot.population} settlers</small>
+                </div>`,
+                `<div class="summary-card">
+                    <strong>Pressure</strong>
+                    <span>${snapshot.metrics.unmetNeeds > 0 ? "Survival" : "Expansion"}</span>
+                    <small>${snapshot.metrics.unmetNeeds > 0 ? `${snapshot.metrics.unmetNeeds} need help` : "Stable & growing"}</small>
+                </div>`,
+            ].join("");
+        }
+
+        // ── Stat Grid (3-column in sidebar) ──
+        if (this.summaryElement) {
+            this.summaryElement.innerHTML = [
+                card("Day",      `${snapshot.day}`),
+                card("Pop",      snapshot.population, "good"),
+                card("Food",     snapshot.metrics.totalFoodToday),
+                card("Stable",   `${snapshot.metrics.averageStability}%`, snapshot.metrics.averageStability < 60 ? "warn" : ""),
+                card("Idle",     snapshot.metrics.idleAgents,  snapshot.metrics.idleAgents > 1 ? "warn" : ""),
+                card("Needs",    snapshot.metrics.unmetNeeds,  snapshot.metrics.unmetNeeds > 0 ? "danger" : ""),
+                card("Wood",     snapshot.resources.wood),
+                card("Stone",    snapshot.resources.stone),
+                card("Berries",  snapshot.resources.berries),
+                card("Shelters", snapshot.buildings.shelter),
+                card("Beds",     snapshot.buildings.bed),
+                card("Farms",    snapshot.buildings.farm),
+            ].join("");
+        }
+
+        // ── World Status ──
+        if (this.worldStatusElement) {
+            this.worldStatusElement.innerHTML = [
+                detailRow("Simulation", this.world.paused ? "⏸ Paused" : `▶ Running x${this.world.speed}`),
+                detailRow("Tool",       this.activeToolElement?.textContent || "Inspect"),
+                detailRow("Speed",      `x${this.world.speed}`),
+            ].join("");
+        }
 
         this.renderSelected(snapshot.selected);
         this.renderToolState();
